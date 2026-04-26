@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Middle Office | Control de Saldos BYMA Clearing</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Calibri, system-ui, sans-serif; }
+body { background:#F0F2F5; color:#212529; padding:20px; min-height:100vh; }
+.container { max-width:1600px; margin:0 auto; }
+.header { background:linear-gradient(135deg,#1F3864,#2E75B6); color:white; padding:24px 28px; border-radius:12px; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+.header h1 { font-size:24px; font-weight:600; margin-bottom:4px; }
+.header .subtitle { font-size:13px; opacity:0.9; font-style:italic; }
+.dropzone { background:white; border:2px dashed #2E75B6; border-radius:12px; padding:30px; text-align:center; margin-bottom:14px; transition:all 0.2s; cursor:pointer; }
+.dropzone.dragover { background:#D9E1F2; border-color:#1F3864; transform:scale(1.01); }
+.dropzone h3 { color:#1F3864; font-size:16px; margin-bottom:6px; }
+.dropzone p { color:#6c757d; font-size:13px; }
+.dropzone input { display:none; }
+.dropzone .btn { display:inline-block; background:#2E75B6; color:white; padding:9px 22px; border-radius:6px; margin-top:10px; font-weight:600; font-size:13px; }
+.dropzone.loaded { border-style:solid; border-color:#28a745; background:#F0FFF4; }
+.paste-toggle { font-size:12px; color:#1F3864; margin-bottom:14px; cursor:pointer; text-decoration:underline; display:inline-block; }
+#pasteArea { display:none; background:white; padding:14px; border-radius:8px; margin-bottom:14px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+#pasteArea textarea { width:100%; height:140px; font-family:monospace; font-size:11px; padding:8px; border:1px solid #ced4da; border-radius:5px; }
+#pasteArea button { margin-top:8px; background:#2E75B6; color:white; border:none; padding:7px 16px; border-radius:5px; cursor:pointer; font-weight:600; }
+#errorBox { background:#FFE5E5; color:#9C0006; border-left:4px solid #9C0006; padding:12px 16px; border-radius:6px; margin-bottom:14px; font-size:13px; display:none; }
+.summary-bar { background:white; padding:14px 20px; border-radius:8px; margin-bottom:20px; display:flex; gap:24px; flex-wrap:wrap; align-items:center; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+.summary-bar .item { font-size:13px; }
+.summary-bar .item .label { color:#6c757d; }
+.summary-bar .item .value { font-weight:700; color:#1F3864; margin-left:6px; }
+.summary-bar .item .value.danger { color:#9C0006; }
+.summary-bar .item .value.success { color:#006100; }
+.section-title { font-size:16px; font-weight:700; color:#1F3864; margin:20px 0 12px 0; padding-bottom:6px; border-bottom:2px solid #2E75B6; }
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:16px; margin-bottom:20px; }
+.kpi-card { background:white; border-radius:10px; padding:18px 22px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border-top:4px solid #2E75B6; }
+.kpi-card .moneda { font-size:13px; font-weight:600; color:#6c757d; letter-spacing:1px; }
+.kpi-card .moneda-name { font-size:22px; font-weight:700; color:#1F3864; margin-bottom:14px; }
+.kpi-card .row { display:flex; justify-content:space-between; padding:5px 0; font-size:13px; border-bottom:1px solid #f0f0f0; }
+.kpi-card .row.total { font-size:16px; font-weight:700; padding:10px 0 6px 0; border-top:2px solid #1F3864; border-bottom:none; margin-top:6px; }
+.kpi-card .row .label { color:#495057; }
+.kpi-card .row .value.payout { color:#006100; font-weight:600; }
+.kpi-card .row .value.payin { color:#9C0006; font-weight:600; }
+.kpi-card .row .value.neto-pos { color:#006100; }
+.kpi-card .row .value.neto-neg { color:#9C0006; }
+.kpi-card .estado { margin-top:10px; padding:8px 12px; border-radius:6px; text-align:center; font-weight:700; font-size:13px; }
+.kpi-card .estado.favor { background:#C6EFCE; color:#006100; }
+.kpi-card .estado.pagar { background:#FFC7CE; color:#9C0006; }
+.kpi-card .estado.neutro { background:#EDEDED; color:#6c757d; }
+.tables-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
+@media (max-width:1100px) { .tables-grid { grid-template-columns:1fr; } }
+.table-card { background:white; border-radius:10px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+.table-card h3 { font-size:14px; font-weight:700; color:#1F3864; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid #e9ecef; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+table th { background:#1F3864; color:white; padding:8px 10px; text-align:left; font-weight:600; }
+table th.num { text-align:right; }
+table td { padding:6px 10px; border-bottom:1px solid #f0f0f0; }
+table td.num { text-align:right; font-variant-numeric:tabular-nums; }
+table td.pos { color:#006100; font-weight:600; }
+table td.neg { color:#9C0006; font-weight:600; }
+table tr:hover td { background:#f8f9fa; }
+.full-table { background:white; border-radius:10px; padding:16px 18px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:20px; }
+.full-table h3 { font-size:14px; font-weight:700; color:#1F3864; margin-bottom:10px; }
+.controls { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+.controls input, .controls select { padding:7px 11px; border:1px solid #ced4da; border-radius:5px; font-size:13px; }
+.controls input { flex:1; min-width:180px; }
+.controls .btn { background:#2E75B6; color:white; border:none; padding:7px 14px; border-radius:5px; cursor:pointer; font-size:13px; font-weight:600; }
+.controls .btn:hover { background:#1F3864; }
+.controls .btn.export { background:#28a745; }
+.scroll-table { max-height:480px; overflow-y:auto; border:1px solid #e9ecef; border-radius:6px; }
+.scroll-table table { font-size:11.5px; }
+.scroll-table th { position:sticky; top:0; z-index:1; }
+.tag { display:inline-block; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:700; }
+.tag.payout { background:#C6EFCE; color:#006100; }
+.tag.payin { background:#FFC7CE; color:#9C0006; }
+.tag.pooled { background:#E0E0E0; color:#6c757d; text-decoration:line-through; }
+.tag.cancelled { background:#FFE5B4; color:#8B4513; }
+.tag.closed { background:#D9E1F2; color:#1F3864; }
+.tag.pending { background:#FFF2CC; color:#856404; }
+.tag.cauc { background:#E8DAEF; color:#6C3483; }
+.empty-state { text-align:center; padding:60px 20px; color:#6c757d; }
+.legend { font-size:12px; color:#6c757d; margin-top:8px; line-height:1.6; }
+.toolbar { display:flex; gap:8px; flex-wrap:wrap; }
+.btn-tool { background:white; border:1px solid #2E75B6; color:#1F3864; padding:6px 12px; border-radius:5px; cursor:pointer; font-size:12px; font-weight:600; }
+.btn-tool:hover { background:#D9E1F2; }
+.btn-tool.active { background:#2E75B6; color:white; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>Middle Office &mdash; Control de Saldos BYMA Clearing</h1>
+    <div class="subtitle">PAYOUT = cobr&aacute;s (a favor) &middot; PAYIN = pag&aacute;s (a entregar) &middot; Filas POOLED y CANCELLED se eliminan autom&aacute;ticamente</div>
+  </div>
+ 
+  <div class="dropzone" id="dropzone">
+    <h3>Arrastr&aacute; el archivo de BYMA Settlement Instructions</h3>
+    <p>Acepta .xlsm / .xlsx / .csv &middot; Tambi&eacute;n pod&eacute;s hacer click para elegir</p>
+    <span class="btn">Seleccionar archivo</span>
+    <input type="file" id="fileInput" accept=".csv,.xlsx,.xlsm,.txt">
+  </div>
+ 
+  <span class="paste-toggle" id="pasteToggle">&Oacute; pegar CSV manualmente (si tu navegador no soporta xlsm)</span>
+  <div id="pasteArea">
+    <p style="font-size:12px;color:#6c757d;margin-bottom:6px;">Abr&iacute; el archivo en Excel, seleccion&aacute; todo (Ctrl+A), copi&aacute; (Ctrl+C) y peg&aacute; ac&aacute; abajo. O guard&aacute; como CSV y arrastr&aacute; el .csv.</p>
+    <textarea id="pasteText" placeholder="Pegar contenido CSV aqui..."></textarea>
+    <button id="pasteLoad">Procesar</button>
+  </div>
+ 
+  <div id="errorBox"></div>
+ 
+  <div id="dashboard" style="display:none;">
+    <div class="summary-bar">
+      <div class="item"><span class="label">Archivo:</span><span class="value" id="fileName">-</span></div>
+      <div class="item"><span class="label">Filas totales:</span><span class="value" id="totalRows">0</span></div>
+      <div class="item"><span class="label">POOLED eliminadas:</span><span class="value danger" id="pooledRows">0</span></div>
+      <div class="item"><span class="label">CANCELLED eliminadas:</span><span class="value danger" id="cancelledRows">0</span></div>
+      <div class="item"><span class="label">Filas v&aacute;lidas:</span><span class="value success" id="validRows">0</span></div>
+      <div class="item"><span class="label">Cauciones:</span><span class="value" id="caucRows">0</span></div>
+    </div>
+ 
+    <div class="section-title">Saldo neto por moneda &mdash; Net Quantity firmado (PAYOUT &minus; PAYIN)</div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+ 
+    <div class="section-title">Posici&oacute;n en t&iacute;tulos por especie</div>
+    <div class="tables-grid">
+      <div class="table-card">
+        <h3>Top a RECIBIR (PAYOUT &gt; PAYIN)</h3>
+        <table id="topRecibir"><thead><tr><th>Asset</th><th>Especie</th><th class="num">Net Qty</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="table-card">
+        <h3>Top a ENTREGAR (PAYIN &gt; PAYOUT)</h3>
+        <table id="topEntregar"><thead><tr><th>Asset</th><th>Especie</th><th class="num">Net Qty</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+ 
+    <div class="section-title">Cauciones (Secured Funding)</div>
+    <div class="table-card" style="margin-bottom:20px;">
+      <table id="caucTable"><thead><tr><th>Moneda</th><th>Tipo</th><th class="num">Importe Neto</th><th class="num"># Instr</th><th>Estado</th></tr></thead><tbody></tbody></table>
+      <div class="legend">OPENING = caucion abierta. CLOSING = caucion cerrada (devolucion + interes).</div>
+    </div>
+ 
+    <div class="full-table">
+      <h3>Detalle Settlement Instructions</h3>
+      <div class="controls">
+        <input type="text" id="searchBox" placeholder="Buscar por Asset, External ID, Match ID, Filter Node...">
+        <select id="filterDir"><option value="">Direcci&oacute;n: Todas</option><option value="PAYOUT">PAYOUT (cobra)</option><option value="PAYIN">PAYIN (paga)</option></select>
+        <select id="filterState"><option value="">Estado: Todos</option></select>
+        <select id="filterMon"><option value="">Moneda: Todas</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EXT">EXT</option></select>
+        <div class="toolbar">
+          <button class="btn-tool active" data-flt="all">Todas</button>
+          <button class="btn-tool" data-flt="pend">Pendientes</button>
+          <button class="btn-tool" data-flt="cauc">Cauciones</button>
+          <button class="btn-tool" data-flt="netted">NETTED</button>
+        </div>
+        <button class="btn export" id="exportBtn">Exportar a CSV</button>
+      </div>
+      <div class="scroll-table">
+        <table id="detailTable">
+          <thead><tr>
+            <th>State</th><th>Dir</th><th>Asset</th><th>Especie</th><th class="num">Quantity</th><th class="num">Settled</th><th class="num">Net Qty</th>
+            <th>Sub Type</th><th>Ext State</th><th>Sett Date</th><th>Filter Node</th><th>Match ID</th><th>Ext Instr ID</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="legend" id="detailCount" style="margin-top:8px;">0 filas mostradas</div>
+    </div>
+  </div>
+ 
+  <div id="emptyState" class="empty-state">
+    <p style="font-size:14px;">Carg&aacute; un archivo de BYMA Settlement Instructions para ver los netos.</p>
+  </div>
+</div>
+ 
+<script>
+"use strict";
+ 
+let RAW = [];
+let HEADERS = [];
+let activeQuickFilter = "all";
+ 
+function showError(msg) {
+  const el = document.getElementById("errorBox");
+  el.textContent = msg;
+  el.style.display = "block";
+}
+function clearError() { document.getElementById("errorBox").style.display = "none"; }
+ 
+function fmt(n) {
+  if (n === null || n === undefined || isNaN(n)) return "-";
+  if (n === 0) return "0,00";
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+  return sign + abs.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtMoney(n, sym) {
+  if (n === null || n === undefined || isNaN(n)) return "-";
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+  return sign + sym + " " + abs.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function num(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  const f = parseFloat(String(v).replace(/,/g, ""));
+  return isNaN(f) ? 0 : f;
+}
+function splitAsset(s) {
+  if (!s) return ["", ""];
+  const i = s.indexOf(" - ");
+  return i > 0 ? [s.slice(0, i).trim(), s.slice(i + 3).trim()] : [s.trim(), s.trim()];
+}
+ 
+// CSV parser that respects double quotes (CSV row with embedded commas)
+function parseCSVLine(line) {
+  const res = [];
+  let cur = "";
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === "," && !inQ) {
+      res.push(cur); cur = "";
+    } else {
+      cur += c;
+    }
+  }
+  res.push(cur);
+  return res;
+}
+ 
+function parseCSVText(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.length > 0);
+  return lines.map(parseCSVLine);
+}
+ 
+// Read XLSX/XLSM in pure JS using browser DecompressionStream
+async function parseXlsxFile(file) {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const entries = readZip(buf);
+  // Find sharedStrings and sheet1
+  let ssXml = "", sheetXml = "";
+  for (const e of entries) {
+    if (e.name === "xl/sharedStrings.xml") ssXml = await inflateEntry(e);
+    if (e.name === "xl/worksheets/sheet1.xml") sheetXml = await inflateEntry(e);
+  }
+  const strings = parseSharedStrings(ssXml);
+  const matrix = parseSheet(sheetXml, strings);
+  return matrix;
+}
+ 
+// Minimal ZIP reader: locate End of Central Directory, then iterate Central Directory
+function readZip(buf) {
+  // EOCD signature 0x06054b50 search from end
+  const len = buf.length;
+  let eocd = -1;
+  for (let i = len - 22; i >= Math.max(0, len - 65557); i--) {
+    if (buf[i] === 0x50 && buf[i+1] === 0x4b && buf[i+2] === 0x05 && buf[i+3] === 0x06) {
+      eocd = i; break;
+    }
+  }
+  if (eocd < 0) throw new Error("ZIP EOCD not found");
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  const cdEntries = dv.getUint16(eocd + 10, true);
+  const cdSize = dv.getUint32(eocd + 12, true);
+  const cdOffset = dv.getUint32(eocd + 16, true);
+  const entries = [];
+  let p = cdOffset;
+  for (let i = 0; i < cdEntries; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error("Bad CD entry");
+    const compMethod = dv.getUint16(p + 10, true);
+    const compSize = dv.getUint32(p + 20, true);
+    const uncompSize = dv.getUint32(p + 24, true);
+    const nameLen = dv.getUint16(p + 28, true);
+    const extraLen = dv.getUint16(p + 30, true);
+    const cmtLen = dv.getUint16(p + 32, true);
+    const lhOffset = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(buf.subarray(p + 46, p + 46 + nameLen));
+    // Read local header to know data offset
+    const lhNameLen = dv.getUint16(lhOffset + 26, true);
+    const lhExtraLen = dv.getUint16(lhOffset + 28, true);
+    const dataOffset = lhOffset + 30 + lhNameLen + lhExtraLen;
+    entries.push({ name, compMethod, compSize, uncompSize, dataOffset });
+    p += 46 + nameLen + extraLen + cmtLen;
+  }
+  return entries.map(e => ({ ...e, _buf: buf }));
+}
+ 
+async function inflateEntry(entry) {
+  const data = entry._buf.subarray(entry.dataOffset, entry.dataOffset + entry.compSize);
+  if (entry.compMethod === 0) {
+    return new TextDecoder().decode(data);
+  }
+  if (entry.compMethod === 8) {
+    // Use DecompressionStream raw deflate
+    if (typeof DecompressionStream === "undefined") {
+      throw new Error("Tu navegador no soporta DecompressionStream. Guard&aacute; el archivo como CSV en Excel y prob&aacute; de nuevo.");
+    }
+    const ds = new DecompressionStream("deflate-raw");
+    const blob = new Blob([data]);
+    const stream = blob.stream().pipeThrough(ds);
+    const decompressed = await new Response(stream).arrayBuffer();
+    return new TextDecoder("utf-8").decode(decompressed);
+  }
+  throw new Error("Metodo de compresion no soportado: " + entry.compMethod);
+}
+ 
+function parseSharedStrings(xml) {
+  if (!xml) return [];
+  const out = [];
+  // <si>...<t>text</t>...</si>  (text can have multiple <t> for runs)
+  const siRe = /<si\b[^>]*>([\s\S]*?)<\/si>/g;
+  const tRe = /<t\b[^>]*>([\s\S]*?)<\/t>/g;
+  let m;
+  while ((m = siRe.exec(xml)) !== null) {
+    const inner = m[1];
+    let txt = "";
+    let mt;
+    tRe.lastIndex = 0;
+    while ((mt = tRe.exec(inner)) !== null) txt += mt[1];
+    out.push(decodeXmlEntities(txt));
+  }
+  return out;
+}
+ 
+function decodeXmlEntities(s) {
+  return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
+          .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+}
+ 
+function colLetterToIndex(letters) {
+  let n = 0;
+  for (let i = 0; i < letters.length; i++) {
+    n = n * 26 + (letters.charCodeAt(i) - 64);
+  }
+  return n - 1;
+}
+ 
+function parseSheet(xml, strings) {
+  const rows = [];
+  const rowRe = /<row\b[^>]*>([\s\S]*?)<\/row>/g;
+  const cellRe = /<c\b([^>]*)>([\s\S]*?)<\/c>|<c\b([^>]*)\/>/g;
+  let m;
+  while ((m = rowRe.exec(xml)) !== null) {
+    const inner = m[1];
+    const row = [];
+    cellRe.lastIndex = 0;
+    let mc;
+    while ((mc = cellRe.exec(inner)) !== null) {
+      const attrs = mc[1] || mc[3] || "";
+      const body = mc[2] || "";
+      const refMatch = /r="([A-Z]+)(\d+)"/.exec(attrs);
+      const tMatch = /t="([^"]+)"/.exec(attrs);
+      const colIdx = refMatch ? colLetterToIndex(refMatch[1]) : row.length;
+      while (row.length < colIdx) row.push("");
+      const valMatch = /<v>([\s\S]*?)<\/v>/.exec(body);
+      const isMatch = /<is>([\s\S]*?)<\/is>/.exec(body);
+      let val = "";
+      if (tMatch && tMatch[1] === "s" && valMatch) {
+        val = strings[parseInt(valMatch[1], 10)] || "";
+      } else if (tMatch && tMatch[1] === "inlineStr" && isMatch) {
+        const tInner = /<t\b[^>]*>([\s\S]*?)<\/t>/.exec(isMatch[1]);
+        val = tInner ? decodeXmlEntities(tInner[1]) : "";
+      } else if (valMatch) {
+        val = decodeXmlEntities(valMatch[1]);
+      }
+      row.push(val);
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+ 
+function ingestMatrix(matrix) {
+  if (!matrix || matrix.length < 2) {
+    showError("El archivo no tiene datos suficientes (filas < 2).");
+    return;
+  }
+  // Detect single-column-with-CSV format (BYMA exports this way)
+  let rows = matrix;
+  if (matrix[0].length === 1 && typeof matrix[0][0] === "string" && matrix[0][0].indexOf(",") > 0) {
+    rows = matrix.map(r => parseCSVLine(r[0] || ""));
+  }
+  HEADERS = rows[0].map(h => String(h == null ? "" : h).trim().replace(/^"|"$/g, ""));
+  RAW = rows.slice(1).map(r => r.map(c => String(c == null ? "" : c).replace(/^"|"$/g, "").trim()));
+  if (HEADERS.indexOf("Asset Direction") < 0) {
+    showError("Headers no reconocidos. Esperaba columnas BYMA estandar (Asset Direction, State, Net Quantity, etc.). Encontre: " + HEADERS.slice(0, 8).join(", "));
+    return;
+  }
+  clearError();
+  document.getElementById("dropzone").classList.add("loaded");
+  document.getElementById("emptyState").style.display = "none";
+  document.getElementById("dashboard").style.display = "block";
+  render();
+}
+ 
+async function loadFile(file) {
+  document.getElementById("fileName").textContent = file.name;
+  clearError();
+  const ext = file.name.split(".").pop().toLowerCase();
+  try {
+    if (ext === "csv" || ext === "txt") {
+      const text = await file.text();
+      const matrix = parseCSVText(text);
+      ingestMatrix(matrix);
+    } else if (ext === "xlsx" || ext === "xlsm") {
+      const matrix = await parseXlsxFile(file);
+      ingestMatrix(matrix);
+    } else {
+      showError("Extension no soportada: ." + ext + ". Usa .csv, .xlsx o .xlsm.");
+    }
+  } catch (err) {
+    console.error(err);
+    showError("Error al leer el archivo: " + err.message + ". Probá guardar como CSV en Excel y arrastrar el .csv.");
+  }
+}
+ 
+function H(name) { return HEADERS.indexOf(name); }
+ 
+function render() {
+  const iState = H("State"), iDir = H("Asset Direction"), iAsset = H("Asset");
+  const iQty = H("Quantity"), iSettled = H("Settled Quantity"), iNet = H("Net Quantity");
+  const iSub = H("Sub Type"), iExt = H("External State"), iSettDate = H("Settlement Date");
+  const iFn = H("Market Filter Node"), iMid = H("Match ID"), iEid = H("External Instruction ID");
+ 
+  const total = RAW.length;
+  let pooledN = 0, cancelledN = 0;
+  const ok = RAW.filter(r => {
+    const isPool = r[iState] === "POOLED";
+    const isCanc = r[iExt] === "CANCELLED";
+    if (isPool) pooledN++;
+    if (isCanc) cancelledN++;
+    return !isPool && !isCanc;
+  });
+  const caucN = ok.filter(r => (r[iSub] || "").includes("SECURED_FUNDING")).length;
+ 
+  document.getElementById("totalRows").textContent = total.toLocaleString("es-AR");
+  document.getElementById("pooledRows").textContent = pooledN.toLocaleString("es-AR");
+  document.getElementById("cancelledRows").textContent = cancelledN.toLocaleString("es-AR");
+  document.getElementById("validRows").textContent = ok.length.toLocaleString("es-AR");
+  document.getElementById("caucRows").textContent = caucN.toLocaleString("es-AR");
+ 
+  const monedas = { ARS:{sym:"$",out:0,in:0,n:0}, USD:{sym:"US$",out:0,in:0,n:0}, EXT:{sym:"US$",out:0,in:0,n:0} };
+  ok.forEach(r => {
+    const a = r[iAsset];
+    if (monedas[a]) {
+      const q = num(r[iNet]);
+      if (r[iDir] === "PAYOUT") monedas[a].out += q;
+      else if (r[iDir] === "PAYIN") monedas[a].in += q;
+      monedas[a].n++;
+    }
+  });
+  const kpiGrid = document.getElementById("kpiGrid");
+  kpiGrid.innerHTML = "";
+  Object.entries(monedas).forEach(([m, v]) => {
+    const neto = v.out - v.in;
+    const cls = neto > 0 ? "favor" : (neto < 0 ? "pagar" : "neutro");
+    const txt = neto > 0 ? "A FAVOR — cobrás" : (neto < 0 ? "A PAGAR — entregás" : "NEUTRO");
+    const div = document.createElement("div");
+    div.className = "kpi-card";
+    div.innerHTML =
+      '<div class="moneda">MONEDA</div>' +
+      '<div class="moneda-name">' + m + '</div>' +
+      '<div class="row"><span class="label">PAYOUT (cobra)</span><span class="value payout">' + fmtMoney(v.out, v.sym) + '</span></div>' +
+      '<div class="row"><span class="label">PAYIN (paga)</span><span class="value payin">' + fmtMoney(v.in, v.sym) + '</span></div>' +
+      '<div class="row total"><span class="label">NETO</span><span class="value ' + (neto>=0?'neto-pos':'neto-neg') + '">' + fmtMoney(neto, v.sym) + '</span></div>' +
+      '<div class="estado ' + cls + '">' + txt + '</div>' +
+      '<div class="legend" style="margin-top:6px;">' + v.n + ' instrucciones · Net Quantity firmado</div>';
+    kpiGrid.appendChild(div);
+  });
+ 
+  const especies = {};
+  ok.forEach(r => {
+    const a = r[iAsset];
+    if (!a || a.indexOf(" - ") < 0) return;
+    const [code, name] = splitAsset(a);
+    const q = num(r[iNet]);
+    const sgn = r[iDir] === "PAYOUT" ? 1 : (r[iDir] === "PAYIN" ? -1 : 0);
+    if (!especies[code]) especies[code] = { name, qty: 0, n: 0 };
+    especies[code].qty += sgn * q;
+    especies[code].n++;
+  });
+  const arr = Object.entries(especies).filter(([_, v]) => Math.abs(v.qty) > 0.001);
+  const recibir = arr.filter(([_, v]) => v.qty > 0).sort((a, b) => b[1].qty - a[1].qty).slice(0, 15);
+  const entregar = arr.filter(([_, v]) => v.qty < 0).sort((a, b) => a[1].qty - b[1].qty).slice(0, 15);
+  const trec = document.querySelector("#topRecibir tbody"); trec.innerHTML = "";
+  recibir.forEach(([k, v]) => {
+    trec.insertAdjacentHTML("beforeend", '<tr><td>' + k + '</td><td>' + v.name + '</td><td class="num pos">' + fmt(v.qty) + '</td></tr>');
+  });
+  if (recibir.length === 0) trec.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888">Sin titulos a recibir</td></tr>';
+  const tent = document.querySelector("#topEntregar tbody"); tent.innerHTML = "";
+  entregar.forEach(([k, v]) => {
+    tent.insertAdjacentHTML("beforeend", '<tr><td>' + k + '</td><td>' + v.name + '</td><td class="num neg">' + fmt(v.qty) + '</td></tr>');
+  });
+  if (entregar.length === 0) tent.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888">Sin titulos a entregar</td></tr>';
+ 
+  const cauc = { ARS:{OPENING:{q:0,n:0},CLOSING:{q:0,n:0}}, USD:{OPENING:{q:0,n:0},CLOSING:{q:0,n:0}}, EXT:{OPENING:{q:0,n:0},CLOSING:{q:0,n:0}} };
+  ok.forEach(r => {
+    const sub = r[iSub] || "";
+    if (sub.indexOf("SECURED_FUNDING") < 0) return;
+    const m = r[iAsset];
+    if (!cauc[m]) return;
+    const t = sub.indexOf("OPENING") >= 0 ? "OPENING" : "CLOSING";
+    const q = num(r[iNet]);
+    const sgn = r[iDir] === "PAYOUT" ? 1 : -1;
+    cauc[m][t].q += sgn * q;
+    cauc[m][t].n++;
+  });
+  const ctb = document.querySelector("#caucTable tbody");
+  ctb.innerHTML = "";
+  ["ARS","USD","EXT"].forEach(m => {
+    ["OPENING","CLOSING"].forEach(t => {
+      const v = cauc[m][t];
+      if (v.n === 0 && v.q === 0) return;
+      const est = v.q > 0 ? '<span class="tag payout">COBRA</span>' : (v.q < 0 ? '<span class="tag payin">PAGA</span>' : "-");
+      ctb.insertAdjacentHTML("beforeend",
+        '<tr><td><b>' + m + '</b></td><td>' + t + '</td>' +
+        '<td class="num ' + (v.q>=0?'pos':'neg') + '">' + fmt(v.q) + '</td>' +
+        '<td class="num">' + v.n + '</td><td>' + est + '</td></tr>');
+    });
+  });
+ 
+  const stateSet = Array.from(new Set(RAW.map(r => r[iState]))).filter(Boolean);
+  const sel = document.getElementById("filterState");
+  sel.innerHTML = '<option value="">Estado: Todos</option>' + stateSet.map(s => '<option value="' + s + '">' + s + '</option>').join("");
+  renderDetail();
+}
+ 
+function renderDetail() {
+  if (RAW.length === 0) return;
+  const iState = H("State"), iDir = H("Asset Direction"), iAsset = H("Asset");
+  const iQty = H("Quantity"), iSettled = H("Settled Quantity"), iNet = H("Net Quantity");
+  const iSub = H("Sub Type"), iExt = H("External State"), iSettDate = H("Settlement Date");
+  const iFn = H("Market Filter Node"), iMid = H("Match ID"), iEid = H("External Instruction ID");
+ 
+  const search = (document.getElementById("searchBox").value || "").toUpperCase();
+  const fDir = document.getElementById("filterDir").value;
+  const fState = document.getElementById("filterState").value;
+  const fMon = document.getElementById("filterMon").value;
+ 
+  const filtered = RAW.filter(r => {
+    if (activeQuickFilter === "pend" && (r[iState]==="CLOSED" || r[iState]==="POOLED" || r[iExt]==="CANCELLED")) return false;
+    if (activeQuickFilter === "cauc" && (r[iSub]||"").indexOf("SECURED_FUNDING") < 0) return false;
+    if (activeQuickFilter === "netted" && r[iSub] !== "NETTED") return false;
+    if (fDir && r[iDir] !== fDir) return false;
+    if (fState && r[iState] !== fState) return false;
+    if (fMon) {
+      const inMon = r[iAsset] === fMon || (r[iFn] || "").indexOf("." + fMon + ".") >= 0;
+      if (!inMon) return false;
+    }
+    if (search) {
+      const blob = [r[iAsset], r[iEid], r[iMid], r[iFn]].join(" ").toUpperCase();
+      if (blob.indexOf(search) < 0) return false;
+    }
+    return true;
+  });
+ 
+  const tbody = document.querySelector("#detailTable tbody");
+  tbody.innerHTML = "";
+  const rowsHtml = [];
+  filtered.slice(0, 1000).forEach(r => {
+    const [code, name] = splitAsset(r[iAsset] || "");
+    let stateTag;
+    if (r[iState]==="POOLED") stateTag = '<span class="tag pooled">POOLED</span>';
+    else if (r[iState]==="CLOSED") stateTag = '<span class="tag closed">CLOSED</span>';
+    else stateTag = '<span class="tag pending">' + r[iState] + '</span>';
+    const dirTag = r[iDir]==="PAYOUT" ? '<span class="tag payout">PAYOUT</span>' : '<span class="tag payin">PAYIN</span>';
+    let extTag = "";
+    if (r[iExt]==="CANCELLED") extTag = '<span class="tag cancelled">CANCELLED</span>';
+    else if (r[iExt]) extTag = r[iExt];
+    const subTag = (r[iSub]||"").indexOf("SECURED_FUNDING") >= 0 ? '<span class="tag cauc">CAUCION</span>' : (r[iSub]||"");
+    const isExcluded = r[iState]==="POOLED" || r[iExt]==="CANCELLED";
+    const trStyle = isExcluded ? ' style="opacity:0.5;"' : "";
+    rowsHtml.push('<tr' + trStyle + '>' +
+      '<td>' + stateTag + '</td><td>' + dirTag + '</td><td>' + code + '</td><td>' + name + '</td>' +
+      '<td class="num">' + fmt(num(r[iQty])) + '</td>' +
+      '<td class="num">' + fmt(num(r[iSettled])) + '</td>' +
+      '<td class="num"><b>' + fmt(num(r[iNet])) + '</b></td>' +
+      '<td>' + subTag + '</td><td>' + extTag + '</td><td>' + (r[iSettDate]||"") + '</td>' +
+      '<td style="font-size:10px;">' + (r[iFn]||"") + '</td>' +
+      '<td>' + (r[iMid]||"") + '</td><td>' + (r[iEid]||"") + '</td></tr>');
+  });
+  tbody.innerHTML = rowsHtml.join("");
+  document.getElementById("detailCount").textContent =
+    (filtered.length > 1000 ? "Mostrando 1000 de " + filtered.length + " filas (refina los filtros)" : filtered.length + " filas mostradas");
+}
+ 
+// === Listeners ===
+document.addEventListener("DOMContentLoaded", function() {
+  const dz = document.getElementById("dropzone");
+  const fi = document.getElementById("fileInput");
+  dz.addEventListener("click", function(){ fi.click(); });
+  fi.addEventListener("change", function(e){ if (e.target.files[0]) loadFile(e.target.files[0]); });
+  dz.addEventListener("dragover", function(e){ e.preventDefault(); dz.classList.add("dragover"); });
+  dz.addEventListener("dragleave", function(){ dz.classList.remove("dragover"); });
+  dz.addEventListener("drop", function(e){ e.preventDefault(); dz.classList.remove("dragover"); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+ 
+  document.getElementById("pasteToggle").addEventListener("click", function(){
+    const a = document.getElementById("pasteArea");
+    a.style.display = a.style.display === "none" || !a.style.display ? "block" : "none";
+  });
+  document.getElementById("pasteLoad").addEventListener("click", function(){
+    const text = document.getElementById("pasteText").value;
+    if (!text.trim()) { showError("Pega CSV antes de procesar."); return; }
+    document.getElementById("fileName").textContent = "(pegado)";
+    try {
+      // Try CSV first; if no commas in first line, try tab-separated
+      let firstLine = text.split(/\r?\n/)[0] || "";
+      let matrix;
+      if (firstLine.indexOf("\t") > 0 && firstLine.indexOf(",") < 0) {
+        matrix = text.split(/\r?\n/).filter(l => l.length > 0).map(l => l.split("\t"));
+      } else {
+        matrix = parseCSVText(text);
+      }
+      ingestMatrix(matrix);
+    } catch (err) {
+      console.error(err);
+      showError("Error al procesar el texto pegado: " + err.message);
+    }
+  });
+ 
+  document.getElementById("searchBox").addEventListener("input", renderDetail);
+  document.getElementById("filterDir").addEventListener("change", renderDetail);
+  document.getElementById("filterState").addEventListener("change", renderDetail);
+  document.getElementById("filterMon").addEventListener("change", renderDetail);
+  document.querySelectorAll(".btn-tool").forEach(function(b){
+    b.addEventListener("click", function(){
+      document.querySelectorAll(".btn-tool").forEach(function(x){ x.classList.remove("active"); });
+      b.classList.add("active");
+      activeQuickFilter = b.dataset.flt;
+      renderDetail();
+    });
+  });
+ 
+  document.getElementById("exportBtn").addEventListener("click", function(){
+    if (RAW.length === 0) { showError("Carga un archivo antes de exportar."); return; }
+    const valid = RAW.filter(r => r[H("State")] !== "POOLED" && r[H("External State")] !== "CANCELLED");
+    const lines = [HEADERS.map(csvEscape).join(",")];
+    valid.forEach(r => lines.push(r.map(csvEscape).join(",")));
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "BYMA_resultados_" + new Date().toISOString().slice(0,10) + ".csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+});
+ 
+function csvEscape(s) {
+  s = s == null ? "" : String(s);
+  if (s.indexOf(",") >= 0 || s.indexOf('"') >= 0 || s.indexOf("\n") >= 0) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+</script>
+</body>
+</html>
