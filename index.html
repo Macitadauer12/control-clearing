@@ -955,13 +955,14 @@ function renderIni() {
   });
   if (!entregar.length) tent.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888">Sin t&iacute;tulos a entregar</td></tr>';
 
-  /* ============ NETO consolidado por especie+moneda (combina CT+SB) ============ */
+  /* ============ NETO consolidado UNA fila por ticker (combina CT+SB+monedas) ============ */
   const netoMap = {};
   todayRows.forEach(x => {
     if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
     if (!x.especie) return;
-    const key = x.especie + "|" + x.moneda;
-    if (!netoMap[key]) netoMap[key] = { especie: x.especie, moneda: x.moneda, plus: 0, minus: 0, neto: 0 };
+    const key = x.especie;
+    if (!netoMap[key]) netoMap[key] = { especie: x.especie, monedas: new Set(), plus: 0, minus: 0, neto: 0 };
+    if (x.moneda) netoMap[key].monedas.add(x.moneda);
     const q = x.sq + x.lq;
     if (q > 0) netoMap[key].plus += q;
     else if (q < 0) netoMap[key].minus += -q;
@@ -970,10 +971,11 @@ function renderIni() {
   const netoArr = Object.values(netoMap).filter(v => v.plus > 0.001 || v.minus > 0.001).sort((a,b) => Math.abs(b.neto) - Math.abs(a.neto));
   const netoBody = document.querySelector("#netoTableIni tbody"); netoBody.innerHTML = "";
   netoArr.forEach(v => {
-    const cls = v.neto > 0.001 ? "pos" : (v.neto < -0.001 ? "neg" : "");
-    const badge = v.neto > 0.001 ? '<span class="tag payout">COBR&Aacute;S</span>' : (v.neto < -0.001 ? '<span class="tag payin">ENTREG&Aacute;S</span>' : '<span class="tag pending">NETO 0</span>');
+    const cls = Math.abs(v.neto) < 0.001 ? "" : (v.neto > 0 ? "pos" : "neg");
+    const badge = Math.abs(v.neto) < 0.001 ? '<span class="tag pending">NETO 0</span>' : (v.neto > 0 ? '<span class="tag payout">COBR&Aacute;S</span>' : '<span class="tag payin">ENTREG&Aacute;S</span>');
+    const monedasStr = Array.from(v.monedas).join(", ") || "-";
     netoBody.insertAdjacentHTML("beforeend",
-      '<tr><td><b>' + v.especie + '</b></td><td>' + v.moneda + '</td>' +
+      '<tr><td><b>' + v.especie + '</b></td><td>' + monedasStr + '</td>' +
       '<td class="num pos">' + fmt(v.plus) + '</td>' +
       '<td class="num neg">' + fmt(v.minus) + '</td>' +
       '<td class="num ' + cls + '"><b>' + fmt(v.neto) + '</b></td>' +
@@ -1556,14 +1558,16 @@ function renderObli() {
   });
   if (!entregar.length) tent.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888">Sin t&iacute;tulos a entregar</td></tr>';
 
-  /* ============ NETO consolidado por especie+moneda+cartera (combina CT+SB) ============ */
+  /* ============ NETO consolidado UNA fila por ticker (combina CT+SB+monedas+carteras) ============ */
   const netoMapObli = {};
   rows.forEach(x => {
     if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
     if (x.isCash) return;
     if (!x.especie) return;
-    const key = x.especie + "|" + x.moneda + "|" + (activeCartera === "all" ? x.cartera : "_");
-    if (!netoMapObli[key]) netoMapObli[key] = { especie: x.especie, moneda: x.moneda, cartera: x.cartera, plus: 0, minus: 0, neto: 0 };
+    const key = x.especie;
+    if (!netoMapObli[key]) netoMapObli[key] = { especie: x.especie, monedas: new Set(), carteras: new Set(), plus: 0, minus: 0, neto: 0 };
+    if (x.moneda) netoMapObli[key].monedas.add(x.moneda);
+    if (x.cartera) netoMapObli[key].carteras.add(x.cartera);
     if (x.oq > 0) netoMapObli[key].plus += x.oq;
     else if (x.oq < 0) netoMapObli[key].minus += -x.oq;
     netoMapObli[key].neto += x.oq;
@@ -1571,10 +1575,15 @@ function renderObli() {
   const netoArrObli = Object.values(netoMapObli).filter(v => v.plus > 0.001 || v.minus > 0.001).sort((a,b) => Math.abs(b.neto) - Math.abs(a.neto));
   const netoBodyObli = document.querySelector("#netoTableObli tbody"); netoBodyObli.innerHTML = "";
   netoArrObli.forEach(v => {
-    const cls = v.neto > 0.001 ? "pos" : (v.neto < -0.001 ? "neg" : "");
-    const badge = v.neto > 0.001 ? '<span class="tag payout">COBR&Aacute;S</span>' : (v.neto < -0.001 ? '<span class="tag payin">ENTREG&Aacute;S</span>' : '<span class="tag pending">NETO 0</span>');
+    const cls = Math.abs(v.neto) < 0.001 ? "" : (v.neto > 0 ? "pos" : "neg");
+    const badge = Math.abs(v.neto) < 0.001 ? '<span class="tag pending">NETO 0</span>' : (v.neto > 0 ? '<span class="tag payout">COBR&Aacute;S</span>' : '<span class="tag payin">ENTREG&Aacute;S</span>');
+    const monedasStr = Array.from(v.monedas).join(", ") || "-";
+    const carterasArr = Array.from(v.carteras);
+    const carterasHtml = carterasArr.length === 0 ? "-"
+                       : carterasArr.length === 1 ? cartTag(carterasArr[0])
+                       : '<span class="tag pending">' + carterasArr.join("+") + '</span>';
     netoBodyObli.insertAdjacentHTML("beforeend",
-      '<tr><td><b>' + v.especie + '</b></td><td>' + v.moneda + '</td><td>' + cartTag(v.cartera) + '</td>' +
+      '<tr><td><b>' + v.especie + '</b></td><td>' + monedasStr + '</td><td>' + carterasHtml + '</td>' +
       '<td class="num pos">' + fmt(v.plus) + '</td>' +
       '<td class="num neg">' + fmt(v.minus) + '</td>' +
       '<td class="num ' + cls + '"><b>' + fmt(v.neto) + '</b></td>' +
