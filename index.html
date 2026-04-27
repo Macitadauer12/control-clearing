@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Middle Office | Control de Saldos BYMA Clearing</title>
+<title>Middle Office | Control BYMA Clearing</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI', Calibri, system-ui, sans-serif; }
 body { background:#F0F2F5; color:#212529; padding:20px; min-height:100vh; }
@@ -11,6 +11,14 @@ body { background:#F0F2F5; color:#212529; padding:20px; min-height:100vh; }
 .header { background:linear-gradient(135deg,#1F3864,#2E75B6); color:white; padding:24px 28px; border-radius:12px; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
 .header h1 { font-size:24px; font-weight:600; margin-bottom:4px; }
 .header .subtitle { font-size:13px; opacity:0.9; font-style:italic; }
+
+.tabs { display:flex; gap:4px; margin-bottom:20px; border-bottom:2px solid #2E75B6; }
+.tab-btn { background:#E9ECEF; color:#1F3864; border:none; padding:11px 22px; border-radius:8px 8px 0 0; cursor:pointer; font-size:14px; font-weight:600; transition:all 0.15s; }
+.tab-btn:hover { background:#D9E1F2; }
+.tab-btn.active { background:#2E75B6; color:white; box-shadow:0 -2px 6px rgba(0,0,0,0.08); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
 .dropzone { background:white; border:2px dashed #2E75B6; border-radius:12px; padding:30px; text-align:center; margin-bottom:14px; transition:all 0.2s; cursor:pointer; }
 .dropzone.dragover { background:#D9E1F2; border-color:#1F3864; transform:scale(1.01); }
 .dropzone h3 { color:#1F3864; font-size:16px; margin-bottom:6px; }
@@ -19,10 +27,10 @@ body { background:#F0F2F5; color:#212529; padding:20px; min-height:100vh; }
 .dropzone .btn { display:inline-block; background:#2E75B6; color:white; padding:9px 22px; border-radius:6px; margin-top:10px; font-weight:600; font-size:13px; }
 .dropzone.loaded { border-style:solid; border-color:#28a745; background:#F0FFF4; }
 .paste-toggle { font-size:12px; color:#1F3864; margin-bottom:14px; cursor:pointer; text-decoration:underline; display:inline-block; }
-#pasteArea { display:none; background:white; padding:14px; border-radius:8px; margin-bottom:14px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
-#pasteArea textarea { width:100%; height:140px; font-family:monospace; font-size:11px; padding:8px; border:1px solid #ced4da; border-radius:5px; }
-#pasteArea button { margin-top:8px; background:#2E75B6; color:white; border:none; padding:7px 16px; border-radius:5px; cursor:pointer; font-weight:600; }
-#errorBox { background:#FFE5E5; color:#9C0006; border-left:4px solid #9C0006; padding:12px 16px; border-radius:6px; margin-bottom:14px; font-size:13px; display:none; }
+.paste-area { display:none; background:white; padding:14px; border-radius:8px; margin-bottom:14px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+.paste-area textarea { width:100%; height:140px; font-family:monospace; font-size:11px; padding:8px; border:1px solid #ced4da; border-radius:5px; }
+.paste-area button { margin-top:8px; background:#2E75B6; color:white; border:none; padding:7px 16px; border-radius:5px; cursor:pointer; font-weight:600; }
+.error-box { background:#FFE5E5; color:#9C0006; border-left:4px solid #9C0006; padding:12px 16px; border-radius:6px; margin-bottom:14px; font-size:13px; display:none; }
 .summary-bar { background:white; padding:14px 20px; border-radius:8px; margin-bottom:20px; display:flex; gap:24px; flex-wrap:wrap; align-items:center; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
 .summary-bar .item { font-size:13px; }
 .summary-bar .item .label { color:#6c757d; }
@@ -36,6 +44,8 @@ body { background:#F0F2F5; color:#212529; padding:20px; min-height:100vh; }
 .kpi-card .moneda-name { font-size:22px; font-weight:700; color:#1F3864; margin-bottom:14px; }
 .kpi-card .row { display:flex; justify-content:space-between; padding:5px 0; font-size:13px; border-bottom:1px solid #f0f0f0; }
 .kpi-card .row.total { font-size:16px; font-weight:700; padding:10px 0 6px 0; border-top:2px solid #1F3864; border-bottom:none; margin-top:6px; }
+.kpi-card .row.subgroup { background:#F8F9FA; padding-left:6px; padding-right:6px; border-bottom:none; font-weight:700; color:#1F3864; margin-top:8px; font-size:12px; letter-spacing:.5px; text-transform:uppercase; }
+.kpi-card .row.indent { padding-left:16px; font-size:12px; color:#495057; }
 .kpi-card .row .label { color:#495057; }
 .kpi-card .row .value.payout { color:#006100; font-weight:600; }
 .kpi-card .row .value.payin { color:#9C0006; font-weight:600; }
@@ -76,115 +86,497 @@ table tr:hover td { background:#f8f9fa; }
 .tag.closed { background:#D9E1F2; color:#1F3864; }
 .tag.pending { background:#FFF2CC; color:#856404; }
 .tag.cauc { background:#E8DAEF; color:#6C3483; }
+.tag.cont { background:#FFF2CC; color:#856404; }
+.tag.sb { background:#D9E1F2; color:#1F3864; }
 .empty-state { text-align:center; padding:60px 20px; color:#6c757d; }
 .legend { font-size:12px; color:#6c757d; margin-top:8px; line-height:1.6; }
 .toolbar { display:flex; gap:8px; flex-wrap:wrap; }
 .btn-tool { background:white; border:1px solid #2E75B6; color:#1F3864; padding:6px 12px; border-radius:5px; cursor:pointer; font-size:12px; font-weight:600; }
 .btn-tool:hover { background:#D9E1F2; }
 .btn-tool.active { background:#2E75B6; color:white; }
+
+.manual-card { background:white; border-radius:10px; padding:18px 22px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:20px; }
+.manual-card h3 { color:#1F3864; font-size:15px; margin-bottom:6px; }
+.manual-card .hint { font-size:12px; color:#6c757d; margin-bottom:12px; line-height:1.5; }
+.manual-table { width:100%; border-collapse:collapse; font-size:13px; }
+.manual-table th { background:#1F3864; color:white; padding:8px 10px; text-align:left; font-weight:600; }
+.manual-table td { padding:5px 8px; border-bottom:1px solid #f0f0f0; }
+.manual-table td.label { font-weight:600; color:#1F3864; }
+.manual-table input { width:100%; padding:6px 8px; border:1px solid #ced4da; border-radius:4px; font-size:13px; text-align:right; font-variant-numeric:tabular-nums; }
+.manual-table input:focus { outline:none; border-color:#2E75B6; box-shadow:0 0 0 2px rgba(46,117,182,0.15); }
+.fecha-control { display:flex; align-items:center; gap:10px; margin-bottom:14px; padding:10px 14px; background:#FFF7E0; border-left:4px solid #FFC107; border-radius:6px; }
+.fecha-control label { font-size:13px; font-weight:600; color:#856404; }
+.fecha-control input { padding:6px 10px; border:1px solid #ced4da; border-radius:5px; font-size:13px; }
+.actions { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.actions .btn { background:#2E75B6; color:white; border:none; padding:8px 16px; border-radius:5px; cursor:pointer; font-size:13px; font-weight:600; }
+.actions .btn:hover { background:#1F3864; }
+.actions .btn.secondary { background:#6c757d; }
+.actions .btn.secondary:hover { background:#495057; }
+.actions .btn.danger { background:#dc3545; }
+.actions .btn.danger:hover { background:#a71d2a; }
+.steps-box { background:#F8F9FA; border-left:4px solid #2E75B6; padding:12px 16px; border-radius:6px; margin-bottom:14px; font-size:12.5px; line-height:1.7; color:#495057; }
+.steps-box b { color:#1F3864; }
 </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>Middle Office &mdash; Control de Saldos BYMA Clearing</h1>
-    <div class="subtitle">PAYOUT = cobr&aacute;s (a favor) &middot; PAYIN = pag&aacute;s (a entregar) &middot; Filas POOLED y CANCELLED se eliminan autom&aacute;ticamente</div>
+    <h1>Middle Office &mdash; Control BYMA Clearing</h1>
+    <div class="subtitle">Inicio del d&iacute;a (Actual Positions) &middot; Cierre (Settlement Instructions)</div>
   </div>
- 
-  <div class="dropzone" id="dropzone">
-    <h3>Arrastr&aacute; el archivo de BYMA Settlement Instructions</h3>
-    <p>Acepta .xlsm / .xlsx / .csv &middot; Tambi&eacute;n pod&eacute;s hacer click para elegir</p>
-    <span class="btn">Seleccionar archivo</span>
-    <input type="file" id="fileInput" accept=".csv,.xlsx,.xlsm,.txt">
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="inicio">Control Inicio del D&iacute;a</button>
+    <button class="tab-btn" data-tab="cierre">Cierre &mdash; Settlement Instructions</button>
+    <button class="tab-btn" data-tab="obli">Obligations &mdash; Client + House</button>
   </div>
- 
-  <span class="paste-toggle" id="pasteToggle">&Oacute; pegar CSV manualmente (si tu navegador no soporta xlsm)</span>
-  <div id="pasteArea">
-    <p style="font-size:12px;color:#6c757d;margin-bottom:6px;">Abr&iacute; el archivo en Excel, seleccion&aacute; todo (Ctrl+A), copi&aacute; (Ctrl+C) y peg&aacute; ac&aacute; abajo. O guard&aacute; como CSV y arrastr&aacute; el .csv.</p>
-    <textarea id="pasteText" placeholder="Pegar contenido CSV aqui..."></textarea>
-    <button id="pasteLoad">Procesar</button>
-  </div>
- 
-  <div id="errorBox"></div>
- 
-  <div id="dashboard" style="display:none;">
-    <div class="summary-bar">
-      <div class="item"><span class="label">Archivo:</span><span class="value" id="fileName">-</span></div>
-      <div class="item"><span class="label">Filas totales:</span><span class="value" id="totalRows">0</span></div>
-      <div class="item"><span class="label">POOLED eliminadas:</span><span class="value danger" id="pooledRows">0</span></div>
-      <div class="item"><span class="label">CANCELLED eliminadas:</span><span class="value danger" id="cancelledRows">0</span></div>
-      <div class="item"><span class="label">Filas v&aacute;lidas:</span><span class="value success" id="validRows">0</span></div>
-      <div class="item"><span class="label">Cauciones:</span><span class="value" id="caucRows">0</span></div>
+
+  <!-- ============================================================ -->
+  <!--               TAB 1: CONTROL INICIO DEL DIA                  -->
+  <!-- ============================================================ -->
+  <div class="tab-content active" id="tab-inicio">
+
+    <div class="steps-box">
+      <b>Pasos del control:</b>
+      1) En BYMA Clearing entr&aacute; a Actual Positions y hac&eacute; DOWNLOAD POSITIONS &middot;
+      2) Sub&iacute; el archivo (.csv / .xlsx) ac&aacute; abajo &middot;
+      3) Verific&aacute; que la fecha de Settlement sea HOY &middot;
+      4) Carg&aacute; el saldo al inicio (Nasdaq CV) y los items de Settlement Positions &middot;
+      5) Le&eacute; el <b>neto de t&iacute;tulos</b> a entregar / cobrar de mercado y los <b>saldos</b> por moneda.
     </div>
- 
-    <div class="section-title">Saldo neto por moneda &mdash; Net Quantity firmado (PAYOUT &minus; PAYIN)</div>
-    <div class="kpi-grid" id="kpiGrid"></div>
- 
-    <div class="section-title">Posici&oacute;n en t&iacute;tulos por especie</div>
-    <div class="tables-grid">
-      <div class="table-card">
-        <h3>Top a RECIBIR (PAYOUT &gt; PAYIN)</h3>
-        <table id="topRecibir"><thead><tr><th>Asset</th><th>Especie</th><th class="num">Net Qty</th></tr></thead><tbody></tbody></table>
+
+    <div class="dropzone" id="dropzoneIni">
+      <h3>Arrastr&aacute; el archivo de Actual Positions (DOWNLOAD POSITIONS)</h3>
+      <p>Acepta .xlsm / .xlsx / .csv &middot; Tambi&eacute;n pod&eacute;s hacer click para elegir</p>
+      <span class="btn">Seleccionar archivo</span>
+      <input type="file" id="fileInputIni" accept=".csv,.xlsx,.xlsm,.txt">
+    </div>
+
+    <span class="paste-toggle" id="pasteToggleIni">&Oacute; pegar CSV manualmente</span>
+    <div class="paste-area" id="pasteAreaIni">
+      <p style="font-size:12px;color:#6c757d;margin-bottom:6px;">Abr&iacute; el archivo en Excel, seleccion&aacute; todo (Ctrl+A), copi&aacute; (Ctrl+C) y peg&aacute; ac&aacute; abajo.</p>
+      <textarea id="pasteTextIni" placeholder="Pegar contenido CSV aqui..."></textarea>
+      <button id="pasteLoadIni">Procesar</button>
+    </div>
+
+    <div class="error-box" id="errorBoxIni"></div>
+
+    <div class="fecha-control">
+      <label>Fecha de Settlement a controlar:</label>
+      <input type="date" id="fechaIni">
+      <span style="font-size:12px;color:#6c757d;">(por defecto = hoy)</span>
+    </div>
+
+    <div class="manual-card">
+      <h3>Saldo al inicio + Settlement Positions (carga manual)</h3>
+      <div class="hint">
+        Pon&eacute; signo <b>positivo</b> si <b>cobr&aacute;s</b> y <b>negativo</b> si <b>pag&aacute;s</b>. Acepta puntos o comas como decimal.
+        Estos importes se SUMAN al neto de saldos del archivo.
       </div>
-      <div class="table-card">
-        <h3>Top a ENTREGAR (PAYIN &gt; PAYOUT)</h3>
-        <table id="topEntregar"><thead><tr><th>Asset</th><th>Especie</th><th class="num">Net Qty</th></tr></thead><tbody></tbody></table>
+      <table class="manual-table">
+        <thead>
+          <tr><th>Concepto</th><th style="width:18%;text-align:right;">ARS</th><th style="width:18%;text-align:right;">USD</th><th style="width:18%;text-align:right;">EXT</th></tr>
+        </thead>
+        <tbody id="manualBody">
+          <tr><td class="label">Saldo al inicio (Nasdaq CV)</td>
+              <td><input data-k="saldo" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="saldo" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="saldo" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Facturas</td>
+              <td><input data-k="facturas" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="facturas" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="facturas" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">MtM</td>
+              <td><input data-k="mtm" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="mtm" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="mtm" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Rescates / Suscrip FCI</td>
+              <td><input data-k="fci" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="fci" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="fci" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Intereses Pr&eacute;stamos</td>
+              <td><input data-k="intpres" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="intpres" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="intpres" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Primarias</td>
+              <td><input data-k="primarias" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="primarias" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="primarias" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Ejercicios Opciones</td>
+              <td><input data-k="opc" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="opc" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="opc" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Derivaciones</td>
+              <td><input data-k="deriv" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="deriv" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="deriv" data-m="EXT" placeholder="0,00"></td></tr>
+        </tbody>
+      </table>
+      <div class="actions" style="margin-top:14px;">
+        <button class="btn" id="recalcBtn">Recalcular</button>
+        <button class="btn secondary" id="saveLocalBtn">Guardar valores</button>
+        <button class="btn secondary" id="loadLocalBtn">Cargar &uacute;ltimos</button>
+        <button class="btn danger" id="clearManualBtn">Limpiar manual</button>
       </div>
     </div>
- 
-    <div class="section-title">Cauciones (Secured Funding)</div>
-    <div class="table-card" style="margin-bottom:20px;">
-      <table id="caucTable"><thead><tr><th>Moneda</th><th>Tipo</th><th class="num">Importe Neto</th><th class="num"># Instr</th><th>Estado</th></tr></thead><tbody></tbody></table>
-      <div class="legend">OPENING = caucion abierta. CLOSING = caucion cerrada (devolucion + interes).</div>
-    </div>
- 
-    <div class="full-table">
-      <h3>Detalle Settlement Instructions</h3>
-      <div class="controls">
-        <input type="text" id="searchBox" placeholder="Buscar por Asset, External ID, Match ID, Filter Node...">
-        <select id="filterDir"><option value="">Direcci&oacute;n: Todas</option><option value="PAYOUT">PAYOUT (cobra)</option><option value="PAYIN">PAYIN (paga)</option></select>
-        <select id="filterState"><option value="">Estado: Todos</option></select>
-        <select id="filterMon"><option value="">Moneda: Todas</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EXT">EXT</option></select>
-        <div class="toolbar">
-          <button class="btn-tool active" data-flt="all">Todas</button>
-          <button class="btn-tool" data-flt="pend">Pendientes</button>
-          <button class="btn-tool" data-flt="cauc">Cauciones</button>
-          <button class="btn-tool" data-flt="netted">NETTED</button>
+
+    <div id="dashboardIni" style="display:none;">
+
+      <div class="summary-bar">
+        <div class="item"><span class="label">Archivo:</span><span class="value" id="fileNameIni">-</span></div>
+        <div class="item"><span class="label">Filas archivo:</span><span class="value" id="totalRowsIni">0</span></div>
+        <div class="item"><span class="label">Filas que liquidan:</span><span class="value success" id="todayRowsIni">0</span></div>
+        <div class="item"><span class="label">Cauciones:</span><span class="value" id="caucRowsIni">0</span></div>
+        <div class="item"><span class="label">SENEBI:</span><span class="value" id="sbRowsIni">0</span></div>
+        <div class="item"><span class="label">Contado:</span><span class="value" id="ctRowsIni">0</span></div>
+      </div>
+
+      <!-- TÍTULOS — vista principal -->
+      <div class="section-title">Neto de T&Iacute;TULOS a COBRAR / ENTREGAR a mercado &mdash; por especie y moneda</div>
+      <div class="toolbar" style="margin-bottom:10px;" id="titulosTabIni">
+        <button class="btn-tool active" data-tit-view="det">Detalle (cobrar | entregar)</button>
+        <button class="btn-tool" data-tit-view="neto">NETO consolidado (cobrar &minus; entregar)</button>
+      </div>
+      <div id="titulosDetIni">
+        <div class="tables-grid">
+          <div class="table-card">
+            <h3>A COBRAR de mercado (recib&iacute;s t&iacute;tulos)</h3>
+            <table id="topRecibirIni"><thead><tr><th>Especie</th><th>Tipo</th><th>Mon</th><th class="num">Cantidad</th></tr></thead><tbody></tbody></table>
+          </div>
+          <div class="table-card">
+            <h3>A ENTREGAR a mercado (entreg&aacute;s t&iacute;tulos)</h3>
+            <table id="topEntregarIni"><thead><tr><th>Especie</th><th>Tipo</th><th>Mon</th><th class="num">Cantidad</th></tr></thead><tbody></tbody></table>
+          </div>
         </div>
-        <button class="btn export" id="exportBtn">Exportar a CSV</button>
       </div>
-      <div class="scroll-table">
-        <table id="detailTable">
-          <thead><tr>
-            <th>State</th><th>Dir</th><th>Asset</th><th>Especie</th><th class="num">Quantity</th><th class="num">Settled</th><th class="num">Net Qty</th>
-            <th>Sub Type</th><th>Ext State</th><th>Sett Date</th><th>Filter Node</th><th>Match ID</th><th>Ext Instr ID</th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
+      <div id="titulosNetoIni" style="display:none;">
+        <div class="table-card">
+          <h3>NETO consolidado &mdash; lo que cobro &minus; lo que entrego (combina Contado + SENEBI por especie)</h3>
+          <table id="netoTableIni">
+            <thead><tr><th>Especie</th><th>Mon</th><th class="num">Cobr&aacute;s (+)</th><th class="num">Entreg&aacute;s (&minus;)</th><th class="num">NETO</th><th>Resultado</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
-      <div class="legend" id="detailCount" style="margin-top:8px;">0 filas mostradas</div>
+
+      <!-- SALDOS (cash) -->
+      <div class="section-title">Saldo neto del d&iacute;a por moneda &mdash; A cobrar (+) / A pagar (&minus;)</div>
+      <div class="kpi-grid" id="kpiGridIni"></div>
+
+      <!-- DETALLE -->
+      <div class="section-title">Detalle de posiciones que liquidan en la fecha</div>
+      <div class="full-table">
+        <div class="controls">
+          <input type="text" id="searchBoxIni" placeholder="Buscar por Asset, Filter Node, Account...">
+          <select id="filterMonIni"><option value="">Moneda: Todas</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EXT">EXT</option></select>
+          <select id="filterCatIni">
+            <option value="">Tipo: Todos</option>
+            <option value="CAUCION">Cauciones (PESOS / DOLAR)</option>
+            <option value="SENEBI">SENEBI (SB)</option>
+            <option value="CONTADO">Contado (C-CT)</option>
+          </select>
+          <button class="btn export" id="exportBtnIni">Exportar a CSV</button>
+        </div>
+        <div class="scroll-table">
+          <table id="detailTableIni">
+            <thead><tr>
+              <th>Tipo</th><th>Mon</th><th>Asset</th><th>Filter Node</th><th>Sett Date</th>
+              <th class="num">Short Qty</th><th class="num">Long Qty</th>
+              <th class="num">Short Init Val</th><th class="num">Long Init Val</th>
+              <th class="num">Net Qty</th><th class="num">Neto Cash</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="legend" id="detailCountIni">0 filas mostradas</div>
+      </div>
+    </div>
+
+    <div id="emptyStateIni" class="empty-state">
+      <p style="font-size:14px;">Carg&aacute; el archivo de Actual Positions para ver el control del inicio del d&iacute;a.<br>Mientras tanto pod&eacute;s ir cargando los Settlement Positions y el Saldo Inicial.</p>
     </div>
   </div>
- 
-  <div id="emptyState" class="empty-state">
-    <p style="font-size:14px;">Carg&aacute; un archivo de BYMA Settlement Instructions para ver los netos.</p>
+
+
+  <!-- ============================================================ -->
+  <!--      TAB 2: CIERRE - SETTLEMENT INSTRUCTIONS (ORIGINAL)      -->
+  <!-- ============================================================ -->
+  <div class="tab-content" id="tab-cierre">
+
+    <div class="dropzone" id="dropzone">
+      <h3>Arrastr&aacute; el archivo de BYMA Settlement Instructions</h3>
+      <p>Acepta .xlsm / .xlsx / .csv &middot; Tambi&eacute;n pod&eacute;s hacer click para elegir</p>
+      <span class="btn">Seleccionar archivo</span>
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xlsm,.txt">
+    </div>
+
+    <span class="paste-toggle" id="pasteToggle">&Oacute; pegar CSV manualmente (si tu navegador no soporta xlsm)</span>
+    <div class="paste-area" id="pasteArea">
+      <p style="font-size:12px;color:#6c757d;margin-bottom:6px;">Abr&iacute; el archivo en Excel, seleccion&aacute; todo (Ctrl+A), copi&aacute; (Ctrl+C) y peg&aacute; ac&aacute; abajo. O guard&aacute; como CSV y arrastr&aacute; el .csv.</p>
+      <textarea id="pasteText" placeholder="Pegar contenido CSV aqui..."></textarea>
+      <button id="pasteLoad">Procesar</button>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <div id="dashboard" style="display:none;">
+      <div class="summary-bar">
+        <div class="item"><span class="label">Archivo:</span><span class="value" id="fileName">-</span></div>
+        <div class="item"><span class="label">Filas totales:</span><span class="value" id="totalRows">0</span></div>
+        <div class="item"><span class="label">POOLED eliminadas:</span><span class="value danger" id="pooledRows">0</span></div>
+        <div class="item"><span class="label">CANCELLED eliminadas:</span><span class="value danger" id="cancelledRows">0</span></div>
+        <div class="item"><span class="label">Filas v&aacute;lidas:</span><span class="value success" id="validRows">0</span></div>
+        <div class="item"><span class="label">Cauciones:</span><span class="value" id="caucRows">0</span></div>
+      </div>
+
+      <div class="section-title">Saldo neto por moneda &mdash; Net Quantity firmado (PAYOUT &minus; PAYIN)</div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+
+      <div class="section-title">Neto de T&Iacute;TULOS a COBRAR / ENTREGAR a mercado &mdash; por especie</div>
+      <div class="toolbar" style="margin-bottom:10px;" id="titulosTabCie">
+        <button class="btn-tool active" data-tit-view="det">Detalle (cobrar | entregar)</button>
+        <button class="btn-tool" data-tit-view="neto">NETO consolidado (cobrar &minus; entregar)</button>
+      </div>
+      <div id="titulosDetCie">
+        <div class="tables-grid">
+          <div class="table-card">
+            <h3>A COBRAR de mercado (PAYOUT &gt; PAYIN)</h3>
+            <table id="topRecibir"><thead><tr><th>Asset</th><th>Especie</th><th class="num">Net Qty</th></tr></thead><tbody></tbody></table>
+          </div>
+          <div class="table-card">
+            <h3>A ENTREGAR a mercado (PAYIN &gt; PAYOUT)</h3>
+            <table id="topEntregar"><thead><tr><th>Asset</th><th>Especie</th><th class="num">Net Qty</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div id="titulosNetoCie" style="display:none;">
+        <div class="table-card">
+          <h3>NETO consolidado &mdash; lo que cobro &minus; lo que entrego</h3>
+          <table id="netoTableCie">
+            <thead><tr><th>Asset</th><th>Especie</th><th class="num">PAYOUT (cobr&aacute;s)</th><th class="num">PAYIN (pag&aacute;s)</th><th class="num">NETO</th><th>Resultado</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-title">Cauciones (Secured Funding)</div>
+      <div class="table-card" style="margin-bottom:20px;">
+        <table id="caucTable"><thead><tr><th>Moneda</th><th>Tipo</th><th class="num">Importe Neto</th><th class="num"># Instr</th><th>Estado</th></tr></thead><tbody></tbody></table>
+        <div class="legend">OPENING = caucion abierta. CLOSING = caucion cerrada (devolucion + interes).</div>
+      </div>
+
+      <div class="full-table">
+        <h3>Detalle Settlement Instructions</h3>
+        <div class="controls">
+          <input type="text" id="searchBox" placeholder="Buscar por Asset, External ID, Match ID, Filter Node...">
+          <select id="filterDir"><option value="">Direcci&oacute;n: Todas</option><option value="PAYOUT">PAYOUT (cobra)</option><option value="PAYIN">PAYIN (paga)</option></select>
+          <select id="filterState"><option value="">Estado: Todos</option></select>
+          <select id="filterMon"><option value="">Moneda: Todas</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EXT">EXT</option></select>
+          <div class="toolbar">
+            <button class="btn-tool active" data-flt="all">Todas</button>
+            <button class="btn-tool" data-flt="pend">Pendientes</button>
+            <button class="btn-tool" data-flt="cauc">Cauciones</button>
+            <button class="btn-tool" data-flt="netted">NETTED</button>
+          </div>
+          <button class="btn export" id="exportBtn">Exportar a CSV</button>
+        </div>
+        <div class="scroll-table">
+          <table id="detailTable">
+            <thead><tr>
+              <th>State</th><th>Dir</th><th>Asset</th><th>Especie</th><th class="num">Quantity</th><th class="num">Settled</th><th class="num">Net Qty</th>
+              <th>Sub Type</th><th>Ext State</th><th>Sett Date</th><th>Filter Node</th><th>Match ID</th><th>Ext Instr ID</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="legend" id="detailCount" style="margin-top:8px;">0 filas mostradas</div>
+      </div>
+    </div>
+
+    <div id="emptyState" class="empty-state">
+      <p style="font-size:14px;">Carg&aacute; un archivo de BYMA Settlement Instructions para ver los netos.</p>
+    </div>
   </div>
+
+
+  <!-- ============================================================ -->
+  <!--   TAB 3: OBLIGATIONS - CLIENT + HOUSE (settlementObligations) -->
+  <!-- ============================================================ -->
+  <div class="tab-content" id="tab-obli">
+
+    <div class="steps-box">
+      <b>Vista por cartera (Client + House):</b>
+      Sub&iacute; los archivos de <b>Settlement Obligations</b> (uno por cada cartera). El sistema detecta autom&aacute;ticamente cu&aacute;l es Client y cu&aacute;l es House mirando la columna Account, y muestra el resultado por cartera y consolidado.
+      <br><b>Open Amount:</b> + cobr&aacute;s / &minus; pag&aacute;s &middot; <b>Open Quantity:</b> + recib&iacute;s t&iacute;tulos / &minus; entreg&aacute;s t&iacute;tulos.
+    </div>
+
+    <div class="tables-grid">
+      <div class="dropzone" id="dropzoneClient" style="border-color:#28a745;">
+        <h3 style="color:#006100;">CLIENT (Cliente)</h3>
+        <p>Arrastr&aacute; el archivo de Settlement Obligations &mdash; cuenta Client</p>
+        <span class="btn" style="background:#28a745;">Seleccionar archivo Client</span>
+        <input type="file" id="fileInputClient" accept=".csv,.xlsx,.xlsm,.txt">
+      </div>
+      <div class="dropzone" id="dropzoneHouse" style="border-color:#1F3864;">
+        <h3 style="color:#1F3864;">HOUSE (Cartera Propia)</h3>
+        <p>Arrastr&aacute; el archivo de Settlement Obligations &mdash; cuenta House</p>
+        <span class="btn">Seleccionar archivo House</span>
+        <input type="file" id="fileInputHouse" accept=".csv,.xlsx,.xlsm,.txt">
+      </div>
+    </div>
+
+    <div class="error-box" id="errorBoxObli"></div>
+
+    <div class="fecha-control">
+      <label>Fecha de Settlement a controlar:</label>
+      <input type="date" id="fechaObli">
+      <span style="font-size:12px;color:#6c757d;">(por defecto = hoy)</span>
+    </div>
+
+    <div class="manual-card">
+      <h3>Saldo al inicio + Settlement Positions (carga manual)</h3>
+      <div class="hint">
+        Pon&eacute; signo <b>positivo</b> si <b>cobr&aacute;s</b> y <b>negativo</b> si <b>pag&aacute;s</b>.
+        Estos importes se SUMAN al neto de saldos. Pod&eacute;s separar Client / House si carg&aacute;s en columnas distintas.
+      </div>
+      <table class="manual-table">
+        <thead>
+          <tr><th>Concepto</th><th style="width:18%;text-align:right;">ARS</th><th style="width:18%;text-align:right;">USD</th><th style="width:18%;text-align:right;">EXT</th></tr>
+        </thead>
+        <tbody id="manualBodyObli">
+          <tr><td class="label">Saldo al inicio (Nasdaq CV)</td>
+              <td><input data-k="saldo" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="saldo" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="saldo" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Facturas</td>
+              <td><input data-k="facturas" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="facturas" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="facturas" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">MtM</td>
+              <td><input data-k="mtm" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="mtm" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="mtm" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Rescates / Suscrip FCI</td>
+              <td><input data-k="fci" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="fci" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="fci" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Intereses Pr&eacute;stamos</td>
+              <td><input data-k="intpres" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="intpres" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="intpres" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Primarias</td>
+              <td><input data-k="primarias" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="primarias" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="primarias" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Ejercicios Opciones</td>
+              <td><input data-k="opc" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="opc" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="opc" data-m="EXT" placeholder="0,00"></td></tr>
+          <tr><td class="label">Derivaciones</td>
+              <td><input data-k="deriv" data-m="ARS" placeholder="0,00"></td>
+              <td><input data-k="deriv" data-m="USD" placeholder="0,00"></td>
+              <td><input data-k="deriv" data-m="EXT" placeholder="0,00"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="dashboardObli" style="display:none;">
+
+      <div class="summary-bar">
+        <div class="item"><span class="label">Client:</span><span class="value" id="fileNameClient">-</span></div>
+        <div class="item"><span class="label">House:</span><span class="value" id="fileNameHouse">-</span></div>
+        <div class="item"><span class="label">Filas Client:</span><span class="value" id="rowsClient">0</span></div>
+        <div class="item"><span class="label">Filas House:</span><span class="value" id="rowsHouse">0</span></div>
+        <div class="item"><span class="label">Filas que liquidan:</span><span class="value success" id="rowsObli">0</span></div>
+        <div class="item"><span class="label">COLLATERAL:</span><span class="value" id="rowsCol">0</span></div>
+      </div>
+
+      <div class="toolbar" style="margin-bottom:14px;">
+        <button class="btn-tool active" data-cart="all">Consolidado (Client + House)</button>
+        <button class="btn-tool" data-cart="CLIENT">Solo CLIENT</button>
+        <button class="btn-tool" data-cart="HOUSE">Solo HOUSE</button>
+      </div>
+
+      <!-- TÍTULOS NETOS -->
+      <div class="section-title">Neto de T&Iacute;TULOS a COBRAR / ENTREGAR a mercado &mdash; por especie y moneda</div>
+      <div class="toolbar" style="margin-bottom:10px;" id="titulosTabObli">
+        <button class="btn-tool active" data-tit-view="det">Detalle (cobrar | entregar)</button>
+        <button class="btn-tool" data-tit-view="neto">NETO consolidado (cobrar &minus; entregar)</button>
+      </div>
+      <div id="titulosDetObli">
+        <div class="tables-grid">
+          <div class="table-card">
+            <h3>A COBRAR de mercado (recib&iacute;s t&iacute;tulos)</h3>
+            <table id="topRecibirObli"><thead><tr><th>Especie</th><th>Tipo</th><th>Mon</th><th>Cartera</th><th class="num">Cantidad</th></tr></thead><tbody></tbody></table>
+          </div>
+          <div class="table-card">
+            <h3>A ENTREGAR a mercado (entreg&aacute;s t&iacute;tulos)</h3>
+            <table id="topEntregarObli"><thead><tr><th>Especie</th><th>Tipo</th><th>Mon</th><th>Cartera</th><th class="num">Cantidad</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+      <div id="titulosNetoObli" style="display:none;">
+        <div class="table-card">
+          <h3>NETO consolidado &mdash; lo que cobro &minus; lo que entrego (combina Contado + SENEBI por especie)</h3>
+          <table id="netoTableObli">
+            <thead><tr><th>Especie</th><th>Mon</th><th>Cartera</th><th class="num">Cobr&aacute;s (+)</th><th class="num">Entreg&aacute;s (&minus;)</th><th class="num">NETO</th><th>Resultado</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SALDOS -->
+      <div class="section-title">Saldo neto del d&iacute;a por moneda</div>
+      <div class="kpi-grid" id="kpiGridObli"></div>
+
+      <!-- COLLATERAL -->
+      <div class="section-title" id="colTitle" style="display:none;">Movimientos de Garant&iacute;a (COLLATERAL_DEPOSIT)</div>
+      <div class="table-card" id="colCard" style="display:none; margin-bottom:20px;">
+        <table id="colTable"><thead><tr><th>Especie</th><th>Cartera</th><th class="num">Cantidad neta</th></tr></thead><tbody></tbody></table>
+        <div class="legend">Movimientos de t&iacute;tulos en cuenta de garant&iacute;as (sin impacto en cash).</div>
+      </div>
+
+      <!-- DETALLE -->
+      <div class="section-title">Detalle de obligations que liquidan en la fecha</div>
+      <div class="full-table">
+        <div class="controls">
+          <input type="text" id="searchBoxObli" placeholder="Buscar por Asset, Filter Node, Account...">
+          <select id="filterMonObli"><option value="">Moneda: Todas</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EXT">EXT</option></select>
+          <select id="filterCatObli">
+            <option value="">Tipo: Todos</option>
+            <option value="CAUCION">Cauciones</option>
+            <option value="SENEBI">SENEBI (SB)</option>
+            <option value="CONTADO">Contado (C-CT)</option>
+            <option value="COLLATERAL">Collateral Deposit</option>
+          </select>
+          <button class="btn export" id="exportBtnObli">Exportar a CSV</button>
+        </div>
+        <div class="scroll-table">
+          <table id="detailTableObli">
+            <thead><tr>
+              <th>Cartera</th><th>Tipo</th><th>Mon</th><th>Especie</th><th>Asset</th><th>Filter Node</th><th>Sett Date</th>
+              <th class="num">Open Amount</th><th class="num">Open Quantity</th><th>Sub Type</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="legend" id="detailCountObli">0 filas mostradas</div>
+      </div>
+    </div>
+
+    <div id="emptyStateObli" class="empty-state">
+      <p style="font-size:14px;">Carg&aacute; los archivos de Settlement Obligations (Client y/o House) para ver el control consolidado.</p>
+    </div>
+  </div>
+
 </div>
- 
+
 <script>
 "use strict";
- 
-let RAW = [];
-let HEADERS = [];
-let activeQuickFilter = "all";
- 
-function showError(msg) {
-  const el = document.getElementById("errorBox");
-  el.textContent = msg;
-  el.style.display = "block";
-}
-function clearError() { document.getElementById("errorBox").style.display = "none"; }
- 
+
+/* =========================================================================
+   UTILIDADES COMPARTIDAS
+   ========================================================================= */
 function fmt(n) {
   if (n === null || n === undefined || isNaN(n)) return "-";
   if (n === 0) return "0,00";
@@ -203,99 +595,91 @@ function num(v) {
   const f = parseFloat(String(v).replace(/,/g, ""));
   return isNaN(f) ? 0 : f;
 }
+function parseNumber(v) {
+  if (v === null || v === undefined) return 0;
+  let s = String(v).trim();
+  if (!s) return 0;
+  const hasComma = s.indexOf(",") >= 0;
+  const hasDot = s.indexOf(".") >= 0;
+  if (hasComma && hasDot) {
+    if (s.lastIndexOf(",") > s.lastIndexOf(".")) s = s.replace(/\./g, "").replace(",", ".");
+    else s = s.replace(/,/g, "");
+  } else if (hasComma) s = s.replace(",", ".");
+  s = s.replace(/[^0-9.\-]/g, "");
+  const f = parseFloat(s);
+  return isNaN(f) ? 0 : f;
+}
 function splitAsset(s) {
   if (!s) return ["", ""];
   const i = s.indexOf(" - ");
   return i > 0 ? [s.slice(0, i).trim(), s.slice(i + 3).trim()] : [s.trim(), s.trim()];
 }
- 
-// CSV parser that respects double quotes (CSV row with embedded commas)
+function csvEscape(s) {
+  s = s == null ? "" : String(s);
+  if (s.indexOf(",") >= 0 || s.indexOf('"') >= 0 || s.indexOf("\n") >= 0) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
 function parseCSVLine(line) {
-  const res = [];
-  let cur = "";
-  let inQ = false;
+  const res = []; let cur = ""; let inQ = false;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
     if (c === '"') {
       if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
       else inQ = !inQ;
-    } else if (c === "," && !inQ) {
-      res.push(cur); cur = "";
-    } else {
-      cur += c;
-    }
+    } else if (c === "," && !inQ) { res.push(cur); cur = ""; }
+    else cur += c;
   }
-  res.push(cur);
-  return res;
+  res.push(cur); return res;
 }
- 
 function parseCSVText(text) {
   const lines = text.split(/\r?\n/).filter(l => l.length > 0);
   return lines.map(parseCSVLine);
 }
- 
-// Read XLSX/XLSM in pure JS using browser DecompressionStream
+
+/* XLSX/XLSM reader */
 async function parseXlsxFile(file) {
   const buf = new Uint8Array(await file.arrayBuffer());
   const entries = readZip(buf);
-  // Find sharedStrings and sheet1
   let ssXml = "", sheetXml = "";
   for (const e of entries) {
     if (e.name === "xl/sharedStrings.xml") ssXml = await inflateEntry(e);
     if (e.name === "xl/worksheets/sheet1.xml") sheetXml = await inflateEntry(e);
   }
   const strings = parseSharedStrings(ssXml);
-  const matrix = parseSheet(sheetXml, strings);
-  return matrix;
+  return parseSheet(sheetXml, strings);
 }
- 
-// Minimal ZIP reader: locate End of Central Directory, then iterate Central Directory
 function readZip(buf) {
-  // EOCD signature 0x06054b50 search from end
-  const len = buf.length;
-  let eocd = -1;
+  const len = buf.length; let eocd = -1;
   for (let i = len - 22; i >= Math.max(0, len - 65557); i--) {
-    if (buf[i] === 0x50 && buf[i+1] === 0x4b && buf[i+2] === 0x05 && buf[i+3] === 0x06) {
-      eocd = i; break;
-    }
+    if (buf[i]===0x50 && buf[i+1]===0x4b && buf[i+2]===0x05 && buf[i+3]===0x06) { eocd = i; break; }
   }
   if (eocd < 0) throw new Error("ZIP EOCD not found");
   const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
   const cdEntries = dv.getUint16(eocd + 10, true);
-  const cdSize = dv.getUint32(eocd + 12, true);
   const cdOffset = dv.getUint32(eocd + 16, true);
-  const entries = [];
-  let p = cdOffset;
+  const entries = []; let p = cdOffset;
   for (let i = 0; i < cdEntries; i++) {
     if (dv.getUint32(p, true) !== 0x02014b50) throw new Error("Bad CD entry");
     const compMethod = dv.getUint16(p + 10, true);
     const compSize = dv.getUint32(p + 20, true);
-    const uncompSize = dv.getUint32(p + 24, true);
     const nameLen = dv.getUint16(p + 28, true);
     const extraLen = dv.getUint16(p + 30, true);
     const cmtLen = dv.getUint16(p + 32, true);
     const lhOffset = dv.getUint32(p + 42, true);
     const name = new TextDecoder().decode(buf.subarray(p + 46, p + 46 + nameLen));
-    // Read local header to know data offset
     const lhNameLen = dv.getUint16(lhOffset + 26, true);
     const lhExtraLen = dv.getUint16(lhOffset + 28, true);
     const dataOffset = lhOffset + 30 + lhNameLen + lhExtraLen;
-    entries.push({ name, compMethod, compSize, uncompSize, dataOffset });
+    entries.push({ name, compMethod, compSize, dataOffset });
     p += 46 + nameLen + extraLen + cmtLen;
   }
   return entries.map(e => ({ ...e, _buf: buf }));
 }
- 
 async function inflateEntry(entry) {
   const data = entry._buf.subarray(entry.dataOffset, entry.dataOffset + entry.compSize);
-  if (entry.compMethod === 0) {
-    return new TextDecoder().decode(data);
-  }
+  if (entry.compMethod === 0) return new TextDecoder().decode(data);
   if (entry.compMethod === 8) {
-    // Use DecompressionStream raw deflate
-    if (typeof DecompressionStream === "undefined") {
-      throw new Error("Tu navegador no soporta DecompressionStream. Guard&aacute; el archivo como CSV en Excel y prob&aacute; de nuevo.");
-    }
+    if (typeof DecompressionStream === "undefined") throw new Error("Tu navegador no soporta DecompressionStream.");
     const ds = new DecompressionStream("deflate-raw");
     const blob = new Blob([data]);
     const stream = blob.stream().pipeThrough(ds);
@@ -304,48 +688,35 @@ async function inflateEntry(entry) {
   }
   throw new Error("Metodo de compresion no soportado: " + entry.compMethod);
 }
- 
 function parseSharedStrings(xml) {
   if (!xml) return [];
   const out = [];
-  // <si>...<t>text</t>...</si>  (text can have multiple <t> for runs)
   const siRe = /<si\b[^>]*>([\s\S]*?)<\/si>/g;
   const tRe = /<t\b[^>]*>([\s\S]*?)<\/t>/g;
   let m;
   while ((m = siRe.exec(xml)) !== null) {
-    const inner = m[1];
-    let txt = "";
-    let mt;
+    const inner = m[1]; let txt = ""; let mt;
     tRe.lastIndex = 0;
     while ((mt = tRe.exec(inner)) !== null) txt += mt[1];
     out.push(decodeXmlEntities(txt));
   }
   return out;
 }
- 
 function decodeXmlEntities(s) {
-  return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
-          .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+  return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/&apos;/g,"'");
 }
- 
 function colLetterToIndex(letters) {
   let n = 0;
-  for (let i = 0; i < letters.length; i++) {
-    n = n * 26 + (letters.charCodeAt(i) - 64);
-  }
+  for (let i = 0; i < letters.length; i++) n = n * 26 + (letters.charCodeAt(i) - 64);
   return n - 1;
 }
- 
 function parseSheet(xml, strings) {
   const rows = [];
   const rowRe = /<row\b[^>]*>([\s\S]*?)<\/row>/g;
   const cellRe = /<c\b([^>]*)>([\s\S]*?)<\/c>|<c\b([^>]*)\/>/g;
   let m;
   while ((m = rowRe.exec(xml)) !== null) {
-    const inner = m[1];
-    const row = [];
-    cellRe.lastIndex = 0;
-    let mc;
+    const inner = m[1]; const row = []; cellRe.lastIndex = 0; let mc;
     while ((mc = cellRe.exec(inner)) !== null) {
       const attrs = mc[1] || mc[3] || "";
       const body = mc[2] || "";
@@ -356,27 +727,426 @@ function parseSheet(xml, strings) {
       const valMatch = /<v>([\s\S]*?)<\/v>/.exec(body);
       const isMatch = /<is>([\s\S]*?)<\/is>/.exec(body);
       let val = "";
-      if (tMatch && tMatch[1] === "s" && valMatch) {
-        val = strings[parseInt(valMatch[1], 10)] || "";
-      } else if (tMatch && tMatch[1] === "inlineStr" && isMatch) {
+      if (tMatch && tMatch[1] === "s" && valMatch) val = strings[parseInt(valMatch[1], 10)] || "";
+      else if (tMatch && tMatch[1] === "inlineStr" && isMatch) {
         const tInner = /<t\b[^>]*>([\s\S]*?)<\/t>/.exec(isMatch[1]);
         val = tInner ? decodeXmlEntities(tInner[1]) : "";
-      } else if (valMatch) {
-        val = decodeXmlEntities(valMatch[1]);
-      }
+      } else if (valMatch) val = decodeXmlEntities(valMatch[1]);
       row.push(val);
     }
     rows.push(row);
   }
   return rows;
 }
- 
-function ingestMatrix(matrix) {
-  if (!matrix || matrix.length < 2) {
-    showError("El archivo no tiene datos suficientes (filas < 2).");
-    return;
+
+function setupTabs() {
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+}
+
+/* =========================================================================
+   ===========       TAB 1: CONTROL INICIO DEL DIA            ============
+   Lee Actual Positions (currentActualPositions)
+   ========================================================================= */
+let DATA_INI = null;
+
+function showErrorIni(msg) { const el = document.getElementById("errorBoxIni"); el.textContent = msg; el.style.display = "block"; }
+function clearErrorIni() { document.getElementById("errorBoxIni").style.display = "none"; }
+
+function findHeader(HEADERS, candidates) {
+  for (const c of candidates) {
+    const idx = HEADERS.findIndex(h => h.toUpperCase() === c.toUpperCase());
+    if (idx >= 0) return idx;
   }
-  // Detect single-column-with-CSV format (BYMA exports this way)
+  for (const c of candidates) {
+    const idx = HEADERS.findIndex(h => h.toUpperCase().indexOf(c.toUpperCase()) >= 0);
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function normalizeDate(s) {
+  if (!s) return "";
+  s = String(s).trim();
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+  if (m) return m[1] + "-" + m[2].padStart(2,"0") + "-" + m[3].padStart(2,"0");
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s);
+  if (m) return m[3] + "-" + m[2].padStart(2,"0") + "-" + m[1].padStart(2,"0");
+  m = /^(\d{1,2})-(\d{1,2})-(\d{4})/.exec(s);
+  if (m) return m[3] + "-" + m[2].padStart(2,"0") + "-" + m[1].padStart(2,"0");
+  m = /^(\d{4})\/(\d{1,2})\/(\d{1,2})/.exec(s);
+  if (m) return m[1] + "-" + m[2].padStart(2,"0") + "-" + m[3].padStart(2,"0");
+  if (/^\d+(\.\d+)?$/.test(s)) {
+    const n = parseFloat(s);
+    if (n > 30000 && n < 80000) {
+      const ms = (n - 25569) * 86400000;
+      return new Date(ms).toISOString().slice(0, 10);
+    }
+  }
+  return s;
+}
+
+function getMoneda(currencyCol, filterNode, asset) {
+  if (currencyCol) {
+    const u = String(currencyCol).toUpperCase().trim();
+    if (u === "ARS" || u === "USD" || u === "EXT") return u;
+  }
+  const blob = ((filterNode||"") + " " + (asset||"")).toUpperCase();
+  if (blob.indexOf("EXT") >= 0) return "EXT";
+  if (blob.indexOf("USD") >= 0 || blob.indexOf("DOLAR") >= 0) return "USD";
+  if (blob.indexOf("ARS") >= 0 || blob.indexOf("PESO") >= 0) return "ARS";
+  return "";
+}
+function categorizar(filterNode, asset) {
+  const fn = (filterNode||"").toUpperCase();
+  const a = (asset||"").toUpperCase();
+  if (/\.CT\.U(\.|$)/.test(fn)) return "CAUCION";
+  if (/\.SB\./.test(fn)) return "SENEBI";
+  if (/\.CT\.C(\.|$)/.test(fn)) return "CONTADO";
+  if (/-U-CT-/.test(a)) return "CAUCION";
+  if (a.startsWith("PESOS-") || a.startsWith("DOLAR-") || a === "PESOS" || a === "DOLAR") return "CAUCION";
+  if (/-C-SB-/.test(a) || /-SB-/.test(a)) return "SENEBI";
+  if (/-C-CT-/.test(a) || /-CT-/.test(a)) return "CONTADO";
+  return "OTRO";
+}
+function getEspecie(asset) {
+  if (!asset) return "";
+  const i = String(asset).indexOf("-");
+  return i > 0 ? String(asset).slice(0, i).trim() : String(asset).trim();
+}
+
+function processActualPositions(matrix) {
+  if (!matrix || matrix.length < 2) throw new Error("El archivo no tiene datos suficientes.");
+  let rows = matrix;
+  if (matrix[0].length === 1 && typeof matrix[0][0] === "string" && matrix[0][0].indexOf(",") > 0) {
+    rows = matrix.map(r => parseCSVLine(r[0] || ""));
+  }
+  const HEADERS = rows[0].map(h => String(h == null ? "" : h).trim().replace(/^"|"$/g, ""));
+  const RAW = rows.slice(1).map(r => r.map(c => String(c == null ? "" : c).replace(/^"|"$/g, "").trim()));
+
+  const iAsset = findHeader(HEADERS, ["Asset"]);
+  const iFN    = findHeader(HEADERS, ["Filter Node","Market Filter","Market Filter Node"]);
+  const iSD    = findHeader(HEADERS, ["Settlement Date","Sett Date","SettlementDate"]);
+  const iSQ    = findHeader(HEADERS, ["Short Quantity","ShortQuantity"]);
+  const iLQ    = findHeader(HEADERS, ["Long Quantity","LongQuantity"]);
+  const iSIV   = findHeader(HEADERS, ["Short Initial Value","ShortInitialValue"]);
+  const iLIV   = findHeader(HEADERS, ["Long Initial Value","LongInitialValue"]);
+  const iCur   = findHeader(HEADERS, ["Currency"]);
+  const iAcc   = findHeader(HEADERS, ["Account"]);
+  const iNQ    = findHeader(HEADERS, ["Net Quantity","NetQuantity"]);
+
+  if (iAsset < 0 || iSD < 0) {
+    throw new Error("Headers no reconocidos. Encontré: " + HEADERS.slice(0, 12).join(", "));
+  }
+
+  const out = RAW.map(r => {
+    const asset = r[iAsset] || "";
+    const fn    = iFN >= 0 ? (r[iFN] || "") : "";
+    const cur   = iCur >= 0 ? (r[iCur] || "") : "";
+    const acc   = iAcc >= 0 ? (r[iAcc] || "") : "";
+    const sd    = normalizeDate(r[iSD] || "");
+    const sq    = parseNumber(r[iSQ] || 0);
+    const lq    = parseNumber(r[iLQ] || 0);
+    const siv   = parseNumber(r[iSIV] || 0);
+    const liv   = parseNumber(r[iLIV] || 0);
+    const nq    = iNQ >= 0 ? parseNumber(r[iNQ] || 0) : (sq + lq);
+    const moneda = getMoneda(cur, fn, asset);
+    const cat = categorizar(fn, asset);
+    const especie = getEspecie(asset);
+
+    /* Cash flow:
+         CAUCION  → asset es PESOS/DOLAR, las quantities son cash. Neto = SQ + LQ.
+         CONTADO/SENEBI → SIV viene <=0 (ventas a cobrar), LIV viene >=0 (compras a pagar).
+                          Cobrás = -SIV  Pagás = LIV  Neto cash = -(SIV + LIV)
+    */
+    let cobras = 0, pagas = 0, netoCash = 0;
+    if (cat === "CAUCION") {
+      cobras   = lq > 0 ? lq : 0;
+      pagas    = sq < 0 ? -sq : 0;
+      netoCash = sq + lq;
+    } else if (cat === "CONTADO" || cat === "SENEBI") {
+      cobras   = siv < 0 ? -siv : 0;
+      pagas    = liv > 0 ?  liv : 0;
+      netoCash = -(siv + liv);
+    }
+    return { _r:r, asset, fn, cur, acc, sd, sq, lq, siv, liv, nq, moneda, cat, especie, cobras, pagas, netoCash };
+  });
+  return { HEADERS, RAW, ROWS: out };
+}
+
+function ingestIni(matrix) {
+  try {
+    DATA_INI = processActualPositions(matrix);
+    clearErrorIni();
+    document.getElementById("dropzoneIni").classList.add("loaded");
+    document.getElementById("emptyStateIni").style.display = "none";
+    document.getElementById("dashboardIni").style.display = "block";
+    renderIni();
+  } catch (e) { showErrorIni(e.message); }
+}
+
+async function loadFileIni(file) {
+  document.getElementById("fileNameIni").textContent = file.name;
+  clearErrorIni();
+  const ext = file.name.split(".").pop().toLowerCase();
+  try {
+    if (ext === "csv" || ext === "txt") ingestIni(parseCSVText(await file.text()));
+    else if (ext === "xlsx" || ext === "xlsm") ingestIni(await parseXlsxFile(file));
+    else showErrorIni("Extensión no soportada: ." + ext);
+  } catch (err) { showErrorIni("Error al leer el archivo: " + err.message); }
+}
+
+function getManualValues() {
+  const out = { ARS:{}, USD:{}, EXT:{} };
+  document.querySelectorAll("#manualBody input").forEach(inp => {
+    const k = inp.dataset.k, m = inp.dataset.m;
+    out[m][k] = parseNumber(inp.value);
+  });
+  return out;
+}
+
+function renderIni() {
+  if (!DATA_INI) return;
+  const fechaCtrl = document.getElementById("fechaIni").value || todayISO();
+  document.getElementById("fechaIni").value = fechaCtrl;
+
+  const todayRows = DATA_INI.ROWS.filter(x => x.sd === fechaCtrl);
+
+  document.getElementById("totalRowsIni").textContent = DATA_INI.ROWS.length.toLocaleString("es-AR");
+  document.getElementById("todayRowsIni").textContent = todayRows.length.toLocaleString("es-AR");
+  document.getElementById("caucRowsIni").textContent = todayRows.filter(x => x.cat === "CAUCION").length.toLocaleString("es-AR");
+  document.getElementById("sbRowsIni").textContent   = todayRows.filter(x => x.cat === "SENEBI").length.toLocaleString("es-AR");
+  document.getElementById("ctRowsIni").textContent   = todayRows.filter(x => x.cat === "CONTADO").length.toLocaleString("es-AR");
+
+  /* ============ TÍTULOS NETOS POR ESPECIE ============ */
+  /* Sólo Contado y SENEBI tienen títulos. Cauciones son cash, no títulos. */
+  const especies = {};
+  todayRows.forEach(x => {
+    if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
+    const key = x.especie + "|" + x.cat + "|" + x.moneda;
+    if (!especies[key]) especies[key] = { especie: x.especie, cat: x.cat, moneda: x.moneda, qty: 0, n: 0 };
+    especies[key].qty += (x.sq + x.lq);
+    especies[key].n++;
+  });
+  const arr = Object.values(especies).filter(v => Math.abs(v.qty) > 0.001);
+  const recibir = arr.filter(v => v.qty > 0).sort((a, b) => b.qty - a.qty);
+  const entregar = arr.filter(v => v.qty < 0).sort((a, b) => a.qty - b.qty);
+  const tagFor = c => c === "SENEBI" ? '<span class="tag sb">SB</span>' : '<span class="tag cont">CT</span>';
+  const trec = document.querySelector("#topRecibirIni tbody"); trec.innerHTML = "";
+  recibir.forEach(v => {
+    trec.insertAdjacentHTML("beforeend",
+      '<tr><td><b>' + v.especie + '</b></td><td>' + tagFor(v.cat) + '</td><td>' + v.moneda + '</td><td class="num pos">' + fmt(v.qty) + '</td></tr>');
+  });
+  if (!recibir.length) trec.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888">Sin t&iacute;tulos a recibir</td></tr>';
+  const tent = document.querySelector("#topEntregarIni tbody"); tent.innerHTML = "";
+  entregar.forEach(v => {
+    tent.insertAdjacentHTML("beforeend",
+      '<tr><td><b>' + v.especie + '</b></td><td>' + tagFor(v.cat) + '</td><td>' + v.moneda + '</td><td class="num neg">' + fmt(v.qty) + '</td></tr>');
+  });
+  if (!entregar.length) tent.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888">Sin t&iacute;tulos a entregar</td></tr>';
+
+  /* ============ NETO consolidado por especie+moneda (combina CT+SB) ============ */
+  const netoMap = {};
+  todayRows.forEach(x => {
+    if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
+    if (!x.especie) return;
+    const key = x.especie + "|" + x.moneda;
+    if (!netoMap[key]) netoMap[key] = { especie: x.especie, moneda: x.moneda, plus: 0, minus: 0, neto: 0 };
+    const q = x.sq + x.lq;
+    if (q > 0) netoMap[key].plus += q;
+    else if (q < 0) netoMap[key].minus += -q;
+    netoMap[key].neto += q;
+  });
+  const netoArr = Object.values(netoMap).filter(v => v.plus > 0.001 || v.minus > 0.001).sort((a,b) => Math.abs(b.neto) - Math.abs(a.neto));
+  const netoBody = document.querySelector("#netoTableIni tbody"); netoBody.innerHTML = "";
+  netoArr.forEach(v => {
+    const cls = v.neto > 0.001 ? "pos" : (v.neto < -0.001 ? "neg" : "");
+    const badge = v.neto > 0.001 ? '<span class="tag payout">COBR&Aacute;S</span>' : (v.neto < -0.001 ? '<span class="tag payin">ENTREG&Aacute;S</span>' : '<span class="tag pending">NETO 0</span>');
+    netoBody.insertAdjacentHTML("beforeend",
+      '<tr><td><b>' + v.especie + '</b></td><td>' + v.moneda + '</td>' +
+      '<td class="num pos">' + fmt(v.plus) + '</td>' +
+      '<td class="num neg">' + fmt(v.minus) + '</td>' +
+      '<td class="num ' + cls + '"><b>' + fmt(v.neto) + '</b></td>' +
+      '<td>' + badge + '</td></tr>');
+  });
+  if (!netoArr.length) netoBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888">Sin movimientos de t&iacute;tulos</td></tr>';
+
+  /* ============ SALDOS POR MONEDA (CASH) ============ */
+  const acc = {
+    ARS: { CAUCION:{cobras:0,pagas:0,n:0}, CONTADO:{cobras:0,pagas:0,n:0}, SENEBI:{cobras:0,pagas:0,n:0} },
+    USD: { CAUCION:{cobras:0,pagas:0,n:0}, CONTADO:{cobras:0,pagas:0,n:0}, SENEBI:{cobras:0,pagas:0,n:0} },
+    EXT: { CAUCION:{cobras:0,pagas:0,n:0}, CONTADO:{cobras:0,pagas:0,n:0}, SENEBI:{cobras:0,pagas:0,n:0} }
+  };
+  todayRows.forEach(x => {
+    if (!acc[x.moneda]) return;
+    const a = acc[x.moneda][x.cat];
+    if (!a) return;
+    a.cobras += x.cobras;
+    a.pagas  += x.pagas;
+    a.n++;
+  });
+
+  const manual = getManualValues();
+  const symMap = { ARS:"$", USD:"US$", EXT:"US$" };
+
+  const kpi = document.getElementById("kpiGridIni");
+  kpi.innerHTML = "";
+  ["ARS","USD","EXT"].forEach(m => {
+    const a = acc[m]; const sym = symMap[m];
+    const netoCauc = a.CAUCION.cobras - a.CAUCION.pagas;
+    const netoCt   = a.CONTADO.cobras - a.CONTADO.pagas;
+    const netoSb   = a.SENEBI.cobras - a.SENEBI.pagas;
+    const mn = manual[m] || {};
+    const sp = (mn.facturas||0) + (mn.mtm||0) + (mn.fci||0) + (mn.intpres||0) + (mn.primarias||0) + (mn.opc||0) + (mn.deriv||0);
+    const saldoIni = mn.saldo || 0;
+    const total = saldoIni + netoCauc + netoCt + netoSb + sp;
+    const cls = total > 0.005 ? "favor" : (total < -0.005 ? "pagar" : "neutro");
+    const txt = total > 0.005 ? "A FAVOR — cobr&aacute;s a mercado" : (total < -0.005 ? "A PAGAR — entreg&aacute;s a mercado" : "NEUTRO");
+
+    const div = document.createElement("div");
+    div.className = "kpi-card";
+    div.innerHTML =
+      '<div class="moneda">MONEDA</div>' +
+      '<div class="moneda-name">' + m + '</div>' +
+      '<div class="row"><span class="label">Saldo al inicio (Nasdaq CV)</span><span class="value ' + (saldoIni>=0?'neto-pos':'neto-neg') + '">' + fmtMoney(saldoIni, sym) + '</span></div>' +
+      '<div class="row subgroup"><span>Cauciones</span><span>' + a.CAUCION.n + ' pos</span></div>' +
+      '<div class="row indent"><span>Cobr&aacute;s</span><span class="value payout">' + fmtMoney(a.CAUCION.cobras, sym) + '</span></div>' +
+      '<div class="row indent"><span>Pag&aacute;s</span><span class="value payin">' + fmtMoney(a.CAUCION.pagas, sym) + '</span></div>' +
+      '<div class="row indent"><span><b>Neto</b></span><span class="value ' + (netoCauc>=0?'neto-pos':'neto-neg') + '"><b>' + fmtMoney(netoCauc, sym) + '</b></span></div>' +
+      '<div class="row subgroup"><span>Contado</span><span>' + a.CONTADO.n + ' pos</span></div>' +
+      '<div class="row indent"><span>Cobr&aacute;s (&minus;SIV)</span><span class="value payout">' + fmtMoney(a.CONTADO.cobras, sym) + '</span></div>' +
+      '<div class="row indent"><span>Pag&aacute;s (LIV)</span><span class="value payin">' + fmtMoney(a.CONTADO.pagas, sym) + '</span></div>' +
+      '<div class="row indent"><span><b>Neto</b></span><span class="value ' + (netoCt>=0?'neto-pos':'neto-neg') + '"><b>' + fmtMoney(netoCt, sym) + '</b></span></div>' +
+      '<div class="row subgroup"><span>SENEBI</span><span>' + a.SENEBI.n + ' pos</span></div>' +
+      '<div class="row indent"><span>Cobr&aacute;s (&minus;SIV)</span><span class="value payout">' + fmtMoney(a.SENEBI.cobras, sym) + '</span></div>' +
+      '<div class="row indent"><span>Pag&aacute;s (LIV)</span><span class="value payin">' + fmtMoney(a.SENEBI.pagas, sym) + '</span></div>' +
+      '<div class="row indent"><span><b>Neto</b></span><span class="value ' + (netoSb>=0?'neto-pos':'neto-neg') + '"><b>' + fmtMoney(netoSb, sym) + '</b></span></div>' +
+      '<div class="row subgroup"><span>Settlement Positions (manual)</span><span></span></div>' +
+      '<div class="row indent"><span>Facturas</span><span>' + fmtMoney(mn.facturas||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>MtM</span><span>' + fmtMoney(mn.mtm||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Rescates / Suscrip FCI</span><span>' + fmtMoney(mn.fci||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Intereses Pr&eacute;stamos</span><span>' + fmtMoney(mn.intpres||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Primarias</span><span>' + fmtMoney(mn.primarias||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Ejercicios Opciones</span><span>' + fmtMoney(mn.opc||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Derivaciones</span><span>' + fmtMoney(mn.deriv||0, sym) + '</span></div>' +
+      '<div class="row indent"><span><b>Subtotal Settlement Pos.</b></span><span class="value ' + (sp>=0?'neto-pos':'neto-neg') + '"><b>' + fmtMoney(sp, sym) + '</b></span></div>' +
+      '<div class="row total"><span class="label">TOTAL DEL D&Iacute;A</span><span class="value ' + (total>=0?'neto-pos':'neto-neg') + '">' + fmtMoney(total, sym) + '</span></div>' +
+      '<div class="estado ' + cls + '">' + txt + '</div>';
+    kpi.appendChild(div);
+  });
+
+  renderDetailIni(todayRows);
+}
+
+function renderDetailIni(rows) {
+  const search = (document.getElementById("searchBoxIni").value || "").toUpperCase();
+  const fMon = document.getElementById("filterMonIni").value;
+  const fCat = document.getElementById("filterCatIni").value;
+
+  const filtered = rows.filter(x => {
+    if (fMon && x.moneda !== fMon) return false;
+    if (fCat && x.cat !== fCat) return false;
+    if (search) {
+      const blob = (x.asset + " " + x.fn + " " + x.acc).toUpperCase();
+      if (blob.indexOf(search) < 0) return false;
+    }
+    return true;
+  });
+  const tbody = document.querySelector("#detailTableIni tbody");
+  tbody.innerHTML = "";
+  const html = [];
+  filtered.slice(0, 1500).forEach(x => {
+    const catTag = x.cat === "CAUCION" ? '<span class="tag cauc">CAUCI&Oacute;N</span>'
+                  : x.cat === "SENEBI"  ? '<span class="tag sb">SENEBI</span>'
+                  : x.cat === "CONTADO" ? '<span class="tag cont">CONTADO</span>' : x.cat;
+    html.push('<tr>' +
+      '<td>' + catTag + '</td>' +
+      '<td><b>' + (x.moneda||"-") + '</b></td>' +
+      '<td>' + x.asset + '</td>' +
+      '<td style="font-size:11px;">' + x.fn + '</td>' +
+      '<td>' + x.sd + '</td>' +
+      '<td class="num">' + fmt(x.sq) + '</td>' +
+      '<td class="num">' + fmt(x.lq) + '</td>' +
+      '<td class="num">' + fmt(x.siv) + '</td>' +
+      '<td class="num">' + fmt(x.liv) + '</td>' +
+      '<td class="num ' + (x.nq>=0?'pos':'neg') + '">' + fmt(x.nq) + '</td>' +
+      '<td class="num ' + (x.netoCash>=0?'pos':'neg') + '"><b>' + fmt(x.netoCash) + '</b></td>' +
+      '</tr>');
+  });
+  tbody.innerHTML = html.join("");
+  document.getElementById("detailCountIni").textContent =
+    (filtered.length > 1500 ? "Mostrando 1500 de " + filtered.length + " filas" : filtered.length + " filas mostradas");
+}
+
+function exportIniCSV() {
+  if (!DATA_INI) { showErrorIni("Carg&aacute; un archivo antes de exportar."); return; }
+  const fechaCtrl = document.getElementById("fechaIni").value || todayISO();
+  const headers = ["Tipo","Moneda","Asset","Filter Node","Account","Settlement Date","Short Qty","Long Qty","Short Init Val","Long Init Val","Net Qty","Cobras","Pagas","Neto Cash"];
+  const lines = [headers.map(csvEscape).join(",")];
+  DATA_INI.ROWS.forEach(x => {
+    if (x.sd !== fechaCtrl) return;
+    lines.push([x.cat, x.moneda, x.asset, x.fn, x.acc, x.sd, x.sq, x.lq, x.siv, x.liv, x.nq, x.cobras, x.pagas, x.netoCash].map(csvEscape).join(","));
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "InicioDia_" + fechaCtrl + ".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function saveManualLocal() {
+  try {
+    const o = {};
+    document.querySelectorAll("#manualBody input").forEach(inp => { o[inp.dataset.k + "_" + inp.dataset.m] = inp.value; });
+    o["_fecha"] = document.getElementById("fechaIni").value;
+    localStorage.setItem("middle_office_manual", JSON.stringify(o));
+    alert("Valores guardados localmente.");
+  } catch(e) { alert("No se pudo guardar: " + e.message); }
+}
+function loadManualLocal() {
+  try {
+    const s = localStorage.getItem("middle_office_manual");
+    if (!s) { alert("No hay valores guardados."); return; }
+    const o = JSON.parse(s);
+    document.querySelectorAll("#manualBody input").forEach(inp => {
+      const k = inp.dataset.k + "_" + inp.dataset.m;
+      if (o[k] != null) inp.value = o[k];
+    });
+    if (o._fecha) document.getElementById("fechaIni").value = o._fecha;
+    if (DATA_INI) renderIni();
+  } catch(e) { alert("No se pudo cargar: " + e.message); }
+}
+function clearManual() {
+  document.querySelectorAll("#manualBody input").forEach(inp => inp.value = "");
+  if (DATA_INI) renderIni();
+}
+
+/* =========================================================================
+   ===========   TAB 2: CIERRE - SETTLEMENT INSTRUCTIONS      ============
+   Lógica original — lee BYMA Settlement Instructions
+   PAYIN  = pagás (a entregar)
+   PAYOUT = cobrás (a favor)
+   ========================================================================= */
+let RAW = [];
+let HEADERS = [];
+let activeQuickFilter = "all";
+
+function showError(msg) { const el = document.getElementById("errorBox"); el.textContent = msg; el.style.display = "block"; }
+function clearError() { document.getElementById("errorBox").style.display = "none"; }
+
+function ingestMatrix(matrix) {
+  if (!matrix || matrix.length < 2) { showError("El archivo no tiene datos suficientes (filas < 2)."); return; }
   let rows = matrix;
   if (matrix[0].length === 1 && typeof matrix[0][0] === "string" && matrix[0][0].indexOf(",") > 0) {
     rows = matrix.map(r => parseCSVLine(r[0] || ""));
@@ -393,7 +1163,7 @@ function ingestMatrix(matrix) {
   document.getElementById("dashboard").style.display = "block";
   render();
 }
- 
+
 async function loadFile(file) {
   document.getElementById("fileName").textContent = file.name;
   clearError();
@@ -414,15 +1184,15 @@ async function loadFile(file) {
     showError("Error al leer el archivo: " + err.message + ". Probá guardar como CSV en Excel y arrastrar el .csv.");
   }
 }
- 
+
 function H(name) { return HEADERS.indexOf(name); }
- 
+
 function render() {
   const iState = H("State"), iDir = H("Asset Direction"), iAsset = H("Asset");
   const iQty = H("Quantity"), iSettled = H("Settled Quantity"), iNet = H("Net Quantity");
   const iSub = H("Sub Type"), iExt = H("External State"), iSettDate = H("Settlement Date");
   const iFn = H("Market Filter Node"), iMid = H("Match ID"), iEid = H("External Instruction ID");
- 
+
   const total = RAW.length;
   let pooledN = 0, cancelledN = 0;
   const ok = RAW.filter(r => {
@@ -433,13 +1203,13 @@ function render() {
     return !isPool && !isCanc;
   });
   const caucN = ok.filter(r => (r[iSub] || "").includes("SECURED_FUNDING")).length;
- 
+
   document.getElementById("totalRows").textContent = total.toLocaleString("es-AR");
   document.getElementById("pooledRows").textContent = pooledN.toLocaleString("es-AR");
   document.getElementById("cancelledRows").textContent = cancelledN.toLocaleString("es-AR");
   document.getElementById("validRows").textContent = ok.length.toLocaleString("es-AR");
   document.getElementById("caucRows").textContent = caucN.toLocaleString("es-AR");
- 
+
   const monedas = { ARS:{sym:"$",out:0,in:0,n:0}, USD:{sym:"US$",out:0,in:0,n:0}, EXT:{sym:"US$",out:0,in:0,n:0} };
   ok.forEach(r => {
     const a = r[iAsset];
@@ -468,7 +1238,7 @@ function render() {
       '<div class="legend" style="margin-top:6px;">' + v.n + ' instrucciones · Net Quantity firmado</div>';
     kpiGrid.appendChild(div);
   });
- 
+
   const especies = {};
   ok.forEach(r => {
     const a = r[iAsset];
@@ -476,13 +1246,16 @@ function render() {
     const [code, name] = splitAsset(a);
     const q = num(r[iNet]);
     const sgn = r[iDir] === "PAYOUT" ? 1 : (r[iDir] === "PAYIN" ? -1 : 0);
-    if (!especies[code]) especies[code] = { name, qty: 0, n: 0 };
-    especies[code].qty += sgn * q;
+    if (!especies[code]) especies[code] = { name, qty: 0, plus: 0, minus: 0, n: 0 };
+    const sQ = sgn * q;
+    if (sQ > 0) especies[code].plus += sQ;
+    else if (sQ < 0) especies[code].minus += -sQ;
+    especies[code].qty += sQ;
     especies[code].n++;
   });
   const arr = Object.entries(especies).filter(([_, v]) => Math.abs(v.qty) > 0.001);
-  const recibir = arr.filter(([_, v]) => v.qty > 0).sort((a, b) => b[1].qty - a[1].qty).slice(0, 15);
-  const entregar = arr.filter(([_, v]) => v.qty < 0).sort((a, b) => a[1].qty - b[1].qty).slice(0, 15);
+  const recibir = arr.filter(([_, v]) => v.qty > 0).sort((a, b) => b[1].qty - a[1].qty);
+  const entregar = arr.filter(([_, v]) => v.qty < 0).sort((a, b) => a[1].qty - b[1].qty);
   const trec = document.querySelector("#topRecibir tbody"); trec.innerHTML = "";
   recibir.forEach(([k, v]) => {
     trec.insertAdjacentHTML("beforeend", '<tr><td>' + k + '</td><td>' + v.name + '</td><td class="num pos">' + fmt(v.qty) + '</td></tr>');
@@ -493,7 +1266,22 @@ function render() {
     tent.insertAdjacentHTML("beforeend", '<tr><td>' + k + '</td><td>' + v.name + '</td><td class="num neg">' + fmt(v.qty) + '</td></tr>');
   });
   if (entregar.length === 0) tent.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888">Sin titulos a entregar</td></tr>';
- 
+
+  /* NETO consolidado por especie */
+  const netoArrCie = Object.entries(especies).filter(([_, v]) => v.plus > 0.001 || v.minus > 0.001).sort((a,b) => Math.abs(b[1].qty) - Math.abs(a[1].qty));
+  const netoBodyCie = document.querySelector("#netoTableCie tbody"); netoBodyCie.innerHTML = "";
+  netoArrCie.forEach(([k, v]) => {
+    const cls = v.qty > 0.001 ? "pos" : (v.qty < -0.001 ? "neg" : "");
+    const badge = v.qty > 0.001 ? '<span class="tag payout">COBR&Aacute;S</span>' : (v.qty < -0.001 ? '<span class="tag payin">ENTREG&Aacute;S</span>' : '<span class="tag pending">NETO 0</span>');
+    netoBodyCie.insertAdjacentHTML("beforeend",
+      '<tr><td>' + k + '</td><td>' + v.name + '</td>' +
+      '<td class="num pos">' + fmt(v.plus) + '</td>' +
+      '<td class="num neg">' + fmt(v.minus) + '</td>' +
+      '<td class="num ' + cls + '"><b>' + fmt(v.qty) + '</b></td>' +
+      '<td>' + badge + '</td></tr>');
+  });
+  if (!netoArrCie.length) netoBodyCie.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888">Sin movimientos de t&iacute;tulos</td></tr>';
+
   const cauc = { ARS:{OPENING:{q:0,n:0},CLOSING:{q:0,n:0}}, USD:{OPENING:{q:0,n:0},CLOSING:{q:0,n:0}}, EXT:{OPENING:{q:0,n:0},CLOSING:{q:0,n:0}} };
   ok.forEach(r => {
     const sub = r[iSub] || "";
@@ -519,25 +1307,25 @@ function render() {
         '<td class="num">' + v.n + '</td><td>' + est + '</td></tr>');
     });
   });
- 
+
   const stateSet = Array.from(new Set(RAW.map(r => r[iState]))).filter(Boolean);
   const sel = document.getElementById("filterState");
   sel.innerHTML = '<option value="">Estado: Todos</option>' + stateSet.map(s => '<option value="' + s + '">' + s + '</option>').join("");
   renderDetail();
 }
- 
+
 function renderDetail() {
   if (RAW.length === 0) return;
   const iState = H("State"), iDir = H("Asset Direction"), iAsset = H("Asset");
   const iQty = H("Quantity"), iSettled = H("Settled Quantity"), iNet = H("Net Quantity");
   const iSub = H("Sub Type"), iExt = H("External State"), iSettDate = H("Settlement Date");
   const iFn = H("Market Filter Node"), iMid = H("Match ID"), iEid = H("External Instruction ID");
- 
+
   const search = (document.getElementById("searchBox").value || "").toUpperCase();
   const fDir = document.getElementById("filterDir").value;
   const fState = document.getElementById("filterState").value;
   const fMon = document.getElementById("filterMon").value;
- 
+
   const filtered = RAW.filter(r => {
     if (activeQuickFilter === "pend" && (r[iState]==="CLOSED" || r[iState]==="POOLED" || r[iExt]==="CANCELLED")) return false;
     if (activeQuickFilter === "cauc" && (r[iSub]||"").indexOf("SECURED_FUNDING") < 0) return false;
@@ -554,7 +1342,7 @@ function renderDetail() {
     }
     return true;
   });
- 
+
   const tbody = document.querySelector("#detailTable tbody");
   tbody.innerHTML = "";
   const rowsHtml = [];
@@ -584,9 +1372,433 @@ function renderDetail() {
   document.getElementById("detailCount").textContent =
     (filtered.length > 1000 ? "Mostrando 1000 de " + filtered.length + " filas (refina los filtros)" : filtered.length + " filas mostradas");
 }
- 
-// === Listeners ===
+
+/* =========================================================================
+   ===========       TAB 3: OBLIGATIONS - CLIENT + HOUSE        ============
+   Lee Settlement Obligations (uno Client, otro House).
+   Open Amount: + cobrás / − pagás   Open Quantity: + recibís / − entregás
+   ========================================================================= */
+let DATA_OBLI_CLIENT = null;
+let DATA_OBLI_HOUSE  = null;
+let activeCartera = "all";
+
+function showErrorObli(msg) { const el = document.getElementById("errorBoxObli"); el.textContent = msg; el.style.display = "block"; }
+function clearErrorObli() { document.getElementById("errorBoxObli").style.display = "none"; }
+
+/* "5925 - TX26, ARS"  → { cafci:"5925", ticker:"TX26", currency:"ARS" }
+   "USD, USD"          → { cafci:"",    ticker:"USD",   currency:"USD" }   (cash)
+   "457 - PAMP"        → { cafci:"457", ticker:"PAMP",  currency:"" }      (collateral)
+   "ARS, ARS"          → { cafci:"",    ticker:"ARS",   currency:"ARS" }
+*/
+function parseAssetObli(s) {
+  if (!s) return { cafci:"", ticker:"", currency:"" };
+  const str = String(s).trim();
+  // Split por última coma para currency
+  const lastComma = str.lastIndexOf(",");
+  let main = str, currency = "";
+  if (lastComma >= 0) {
+    currency = str.slice(lastComma + 1).trim().toUpperCase();
+    main = str.slice(0, lastComma).trim();
+  }
+  // Split main por " - " para cafci/ticker
+  const dashIdx = main.indexOf(" - ");
+  let cafci = "", ticker = main;
+  if (dashIdx > 0) {
+    cafci = main.slice(0, dashIdx).trim();
+    ticker = main.slice(dashIdx + 3).trim();
+  }
+  return { cafci, ticker, currency };
+}
+
+function categorizarObli(filterNode, parsedAsset, subType) {
+  if (subType && String(subType).toUpperCase().indexOf("COLLATERAL") >= 0) return "COLLATERAL";
+  const fn = (filterNode||"").toUpperCase();
+  if (/\.CT\.U(\.|$)/.test(fn)) return "CAUCION";
+  if (/\.SB\./.test(fn)) return "SENEBI";
+  if (/\.CT\.C(\.|$)/.test(fn)) return "CONTADO";
+  // Sin Filter Node y sin COLLATERAL → tomamos OTRO
+  return "OTRO";
+}
+
+function processSettlementObligations(matrix, carteraDefault) {
+  if (!matrix || matrix.length < 2) throw new Error("El archivo no tiene datos suficientes.");
+  let rows = matrix;
+  if (matrix[0].length === 1 && typeof matrix[0][0] === "string" && matrix[0][0].indexOf(",") > 0) {
+    rows = matrix.map(r => parseCSVLine(r[0] || ""));
+  }
+  const HEADERS = rows[0].map(h => String(h == null ? "" : h).trim().replace(/^"|"$/g, ""));
+  const RAW = rows.slice(1).map(r => r.map(c => String(c == null ? "" : c).replace(/^"|"$/g, "").trim()));
+
+  const iAcc   = findHeader(HEADERS, ["Account"]);
+  const iAss   = findHeader(HEADERS, ["Assets","Asset"]);
+  const iFN    = findHeader(HEADERS, ["Filter Node","Market Filter"]);
+  const iSD    = findHeader(HEADERS, ["Settlement Date"]);
+  const iOA    = findHeader(HEADERS, ["Open Amount"]);
+  const iOQ    = findHeader(HEADERS, ["Open Quantity"]);
+  const iSub   = findHeader(HEADERS, ["Sub Type"]);
+
+  if (iAss < 0 || iSD < 0 || iOA < 0 || iOQ < 0) {
+    throw new Error("Headers no reconocidos. Esperaba Settlement Obligations (Account, Assets, Open Amount, Open Quantity, ...). Encontré: " + HEADERS.slice(0, 12).join(", "));
+  }
+
+  const out = RAW.map(r => {
+    const account = iAcc >= 0 ? (r[iAcc] || "") : "";
+    const asset   = r[iAss] || "";
+    const fn      = iFN >= 0 ? (r[iFN] || "") : "";
+    const sd      = normalizeDate(r[iSD] || "");
+    const oa      = parseNumber(r[iOA] || 0);
+    const oq      = parseNumber(r[iOQ] || 0);
+    const subType = iSub >= 0 ? (r[iSub] || "") : "";
+
+    // Detectar cartera por nombre de Account; fallback al default del archivo
+    let cartera = carteraDefault || "";
+    const accU = account.toUpperCase();
+    if (accU.indexOf("CLIENT") >= 0) cartera = "CLIENT";
+    else if (accU.indexOf("HOUSE") >= 0) cartera = "HOUSE";
+
+    const parsed = parseAssetObli(asset);
+    // Currency: del Asset o del Filter Node
+    let moneda = parsed.currency;
+    if (!moneda) moneda = getMoneda("", fn, asset);
+    if (moneda !== "ARS" && moneda !== "USD" && moneda !== "EXT") moneda = getMoneda("", fn, "") || moneda;
+
+    const cat = categorizarObli(fn, parsed, subType);
+    const especie = parsed.ticker;
+    // Es cash position? (CAUCION o el asset es la moneda misma)
+    const isCash = cat === "CAUCION" || (especie && especie === moneda);
+
+    return { _r:r, account, cartera, asset, fn, sd, oa, oq, subType, moneda, cat, especie, isCash };
+  });
+  return { HEADERS, RAW, ROWS: out };
+}
+
+function ingestObli(matrix, target, fileName) {
+  try {
+    const data = processSettlementObligations(matrix, target);
+    if (target === "CLIENT") {
+      DATA_OBLI_CLIENT = data;
+      document.getElementById("fileNameClient").textContent = fileName || "(client)";
+      document.getElementById("dropzoneClient").classList.add("loaded");
+    } else {
+      DATA_OBLI_HOUSE = data;
+      document.getElementById("fileNameHouse").textContent = fileName || "(house)";
+      document.getElementById("dropzoneHouse").classList.add("loaded");
+    }
+    clearErrorObli();
+    document.getElementById("emptyStateObli").style.display = "none";
+    document.getElementById("dashboardObli").style.display = "block";
+    renderObli();
+  } catch (e) { showErrorObli(e.message); }
+}
+
+async function loadFileObli(file, target) {
+  clearErrorObli();
+  const ext = file.name.split(".").pop().toLowerCase();
+  try {
+    if (ext === "csv" || ext === "txt") ingestObli(parseCSVText(await file.text()), target, file.name);
+    else if (ext === "xlsx" || ext === "xlsm") ingestObli(await parseXlsxFile(file), target, file.name);
+    else showErrorObli("Extensión no soportada: ." + ext);
+  } catch (err) { showErrorObli("Error al leer el archivo: " + err.message); }
+}
+
+function getManualValuesObli() {
+  const out = { ARS:{}, USD:{}, EXT:{} };
+  document.querySelectorAll("#manualBodyObli input").forEach(inp => {
+    const k = inp.dataset.k, m = inp.dataset.m;
+    out[m][k] = parseNumber(inp.value);
+  });
+  return out;
+}
+
+function renderObli() {
+  const fechaCtrl = document.getElementById("fechaObli").value || todayISO();
+  document.getElementById("fechaObli").value = fechaCtrl;
+
+  const allRows = [];
+  if (DATA_OBLI_CLIENT) DATA_OBLI_CLIENT.ROWS.forEach(x => allRows.push(x));
+  if (DATA_OBLI_HOUSE)  DATA_OBLI_HOUSE.ROWS.forEach(x => allRows.push(x));
+
+  document.getElementById("rowsClient").textContent = (DATA_OBLI_CLIENT ? DATA_OBLI_CLIENT.ROWS.length : 0).toLocaleString("es-AR");
+  document.getElementById("rowsHouse").textContent  = (DATA_OBLI_HOUSE  ? DATA_OBLI_HOUSE.ROWS.length  : 0).toLocaleString("es-AR");
+
+  const todayRows = allRows.filter(x => x.sd === fechaCtrl);
+  // Aplicar filtro de cartera para todo lo que sigue
+  const rows = activeCartera === "all" ? todayRows : todayRows.filter(x => x.cartera === activeCartera);
+
+  document.getElementById("rowsObli").textContent = rows.length.toLocaleString("es-AR");
+  document.getElementById("rowsCol").textContent  = rows.filter(x => x.cat === "COLLATERAL").length.toLocaleString("es-AR");
+
+  /* ============ TÍTULOS NETOS POR ESPECIE (excluye cash y collateral) ============ */
+  const especies = {};
+  rows.forEach(x => {
+    if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
+    if (x.isCash) return;
+    if (!x.especie) return;
+    const key = x.especie + "|" + x.cat + "|" + x.moneda + "|" + (activeCartera === "all" ? x.cartera : "_");
+    if (!especies[key]) especies[key] = { especie: x.especie, cat: x.cat, moneda: x.moneda, cartera: x.cartera, qty: 0 };
+    especies[key].qty += x.oq;
+  });
+  const arr = Object.values(especies).filter(v => Math.abs(v.qty) > 0.001);
+  const recibir = arr.filter(v => v.qty > 0).sort((a, b) => b.qty - a.qty);
+  const entregar = arr.filter(v => v.qty < 0).sort((a, b) => a.qty - b.qty);
+  const tagFor = c => c === "SENEBI" ? '<span class="tag sb">SB</span>' : '<span class="tag cont">CT</span>';
+  const cartTag = c => c === "CLIENT" ? '<span class="tag payout">CLIENT</span>' : c === "HOUSE" ? '<span class="tag closed">HOUSE</span>' : "-";
+  const trec = document.querySelector("#topRecibirObli tbody"); trec.innerHTML = "";
+  recibir.forEach(v => {
+    trec.insertAdjacentHTML("beforeend",
+      '<tr><td><b>' + v.especie + '</b></td><td>' + tagFor(v.cat) + '</td><td>' + v.moneda + '</td><td>' + cartTag(v.cartera) + '</td><td class="num pos">' + fmt(v.qty) + '</td></tr>');
+  });
+  if (!recibir.length) trec.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888">Sin t&iacute;tulos a recibir</td></tr>';
+  const tent = document.querySelector("#topEntregarObli tbody"); tent.innerHTML = "";
+  entregar.forEach(v => {
+    tent.insertAdjacentHTML("beforeend",
+      '<tr><td><b>' + v.especie + '</b></td><td>' + tagFor(v.cat) + '</td><td>' + v.moneda + '</td><td>' + cartTag(v.cartera) + '</td><td class="num neg">' + fmt(v.qty) + '</td></tr>');
+  });
+  if (!entregar.length) tent.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888">Sin t&iacute;tulos a entregar</td></tr>';
+
+  /* ============ NETO consolidado por especie+moneda+cartera (combina CT+SB) ============ */
+  const netoMapObli = {};
+  rows.forEach(x => {
+    if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
+    if (x.isCash) return;
+    if (!x.especie) return;
+    const key = x.especie + "|" + x.moneda + "|" + (activeCartera === "all" ? x.cartera : "_");
+    if (!netoMapObli[key]) netoMapObli[key] = { especie: x.especie, moneda: x.moneda, cartera: x.cartera, plus: 0, minus: 0, neto: 0 };
+    if (x.oq > 0) netoMapObli[key].plus += x.oq;
+    else if (x.oq < 0) netoMapObli[key].minus += -x.oq;
+    netoMapObli[key].neto += x.oq;
+  });
+  const netoArrObli = Object.values(netoMapObli).filter(v => v.plus > 0.001 || v.minus > 0.001).sort((a,b) => Math.abs(b.neto) - Math.abs(a.neto));
+  const netoBodyObli = document.querySelector("#netoTableObli tbody"); netoBodyObli.innerHTML = "";
+  netoArrObli.forEach(v => {
+    const cls = v.neto > 0.001 ? "pos" : (v.neto < -0.001 ? "neg" : "");
+    const badge = v.neto > 0.001 ? '<span class="tag payout">COBR&Aacute;S</span>' : (v.neto < -0.001 ? '<span class="tag payin">ENTREG&Aacute;S</span>' : '<span class="tag pending">NETO 0</span>');
+    netoBodyObli.insertAdjacentHTML("beforeend",
+      '<tr><td><b>' + v.especie + '</b></td><td>' + v.moneda + '</td><td>' + cartTag(v.cartera) + '</td>' +
+      '<td class="num pos">' + fmt(v.plus) + '</td>' +
+      '<td class="num neg">' + fmt(v.minus) + '</td>' +
+      '<td class="num ' + cls + '"><b>' + fmt(v.neto) + '</b></td>' +
+      '<td>' + badge + '</td></tr>');
+  });
+  if (!netoArrObli.length) netoBodyObli.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888">Sin movimientos de t&iacute;tulos</td></tr>';
+
+  /* ============ SALDOS POR MONEDA (cash) ============
+     Open Amount ya viene firmado (+ cobrás / − pagás).
+     Excluimos COLLATERAL (no tiene impacto cash) */
+  const acc = {
+    ARS: { CAUCION:{c:0,p:0,n:0}, CONTADO:{c:0,p:0,n:0}, SENEBI:{c:0,p:0,n:0} },
+    USD: { CAUCION:{c:0,p:0,n:0}, CONTADO:{c:0,p:0,n:0}, SENEBI:{c:0,p:0,n:0} },
+    EXT: { CAUCION:{c:0,p:0,n:0}, CONTADO:{c:0,p:0,n:0}, SENEBI:{c:0,p:0,n:0} }
+  };
+  rows.forEach(x => {
+    if (!acc[x.moneda] || !acc[x.moneda][x.cat]) return;
+    if (x.cat === "COLLATERAL") return;
+    if (x.oa > 0) acc[x.moneda][x.cat].c += x.oa;
+    else if (x.oa < 0) acc[x.moneda][x.cat].p += -x.oa;
+    acc[x.moneda][x.cat].n++;
+  });
+
+  const manual = getManualValuesObli();
+  const symMap = { ARS:"$", USD:"US$", EXT:"US$" };
+  const kpi = document.getElementById("kpiGridObli");
+  kpi.innerHTML = "";
+  ["ARS","USD","EXT"].forEach(m => {
+    const a = acc[m]; const sym = symMap[m];
+    const netoCauc = a.CAUCION.c - a.CAUCION.p;
+    const netoCt   = a.CONTADO.c - a.CONTADO.p;
+    const netoSb   = a.SENEBI.c  - a.SENEBI.p;
+    const mn = manual[m] || {};
+    const sp = (mn.facturas||0) + (mn.mtm||0) + (mn.fci||0) + (mn.intpres||0) + (mn.primarias||0) + (mn.opc||0) + (mn.deriv||0);
+    const saldoIni = mn.saldo || 0;
+    const total = saldoIni + netoCauc + netoCt + netoSb + sp;
+    const cls = total > 0.005 ? "favor" : (total < -0.005 ? "pagar" : "neutro");
+    const txt = total > 0.005 ? "A FAVOR — cobr&aacute;s a mercado" : (total < -0.005 ? "A PAGAR — entreg&aacute;s a mercado" : "NEUTRO");
+    const cartLabel = activeCartera === "all" ? "Consolidado" : activeCartera;
+
+    const div = document.createElement("div");
+    div.className = "kpi-card";
+    div.innerHTML =
+      '<div class="moneda">MONEDA &middot; ' + cartLabel + '</div>' +
+      '<div class="moneda-name">' + m + '</div>' +
+      '<div class="row"><span class="label">Saldo al inicio</span><span class="value ' + (saldoIni>=0?'neto-pos':'neto-neg') + '">' + fmtMoney(saldoIni, sym) + '</span></div>' +
+      '<div class="row subgroup"><span>Cauciones</span><span>' + a.CAUCION.n + ' pos</span></div>' +
+      '<div class="row indent"><span>Cobr&aacute;s</span><span class="value payout">' + fmtMoney(a.CAUCION.c, sym) + '</span></div>' +
+      '<div class="row indent"><span>Pag&aacute;s</span><span class="value payin">' + fmtMoney(a.CAUCION.p, sym) + '</span></div>' +
+      '<div class="row indent"><span><b>Neto</b></span><span class="value ' + (netoCauc>=0?'neto-pos':'neto-neg') + '"><b>' + fmtMoney(netoCauc, sym) + '</b></span></div>' +
+      '<div class="row subgroup"><span>Contado</span><span>' + a.CONTADO.n + ' pos</span></div>' +
+      '<div class="row indent"><span>Cobr&aacute;s</span><span class="value payout">' + fmtMoney(a.CONTADO.c, sym) + '</span></div>' +
+      '<div class="row indent"><span>Pag&aacute;s</span><span class="value payin">' + fmtMoney(a.CONTADO.p, sym) + '</span></div>' +
+      '<div class="row indent"><span><b>Neto</b></span><span class="value ' + (netoCt>=0?'neto-pos':'neto-neg') + '"><b>' + fmtMoney(netoCt, sym) + '</b></span></div>' +
+      '<div class="row subgroup"><span>SENEBI</span><span>' + a.SENEBI.n + ' pos</span></div>' +
+      '<div class="row indent"><span>Cobr&aacute;s</span><span class="value payout">' + fmtMoney(a.SENEBI.c, sym) + '</span></div>' +
+      '<div class="row indent"><span>Pag&aacute;s</span><span class="value payin">' + fmtMoney(a.SENEBI.p, sym) + '</span></div>' +
+      '<div class="row indent"><span><b>Neto</b></span><span class="value ' + (netoSb>=0?'neto-pos':'neto-neg') + '"><b>' + fmtMoney(netoSb, sym) + '</b></span></div>' +
+      '<div class="row subgroup"><span>Settlement Positions (manual)</span><span></span></div>' +
+      '<div class="row indent"><span>Facturas</span><span>' + fmtMoney(mn.facturas||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>MtM</span><span>' + fmtMoney(mn.mtm||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Rescates / Suscrip FCI</span><span>' + fmtMoney(mn.fci||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Intereses Pr&eacute;stamos</span><span>' + fmtMoney(mn.intpres||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Primarias</span><span>' + fmtMoney(mn.primarias||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Ejercicios Opciones</span><span>' + fmtMoney(mn.opc||0, sym) + '</span></div>' +
+      '<div class="row indent"><span>Derivaciones</span><span>' + fmtMoney(mn.deriv||0, sym) + '</span></div>' +
+      '<div class="row indent"><span><b>Subtotal Settlement Pos.</b></span><span class="value ' + (sp>=0?'neto-pos':'neto-neg') + '"><b>' + fmtMoney(sp, sym) + '</b></span></div>' +
+      '<div class="row total"><span class="label">TOTAL DEL D&Iacute;A</span><span class="value ' + (total>=0?'neto-pos':'neto-neg') + '">' + fmtMoney(total, sym) + '</span></div>' +
+      '<div class="estado ' + cls + '">' + txt + '</div>';
+    kpi.appendChild(div);
+  });
+
+  /* ============ COLLATERAL ============ */
+  const colRows = rows.filter(x => x.cat === "COLLATERAL" && x.oq !== 0);
+  if (colRows.length > 0) {
+    document.getElementById("colTitle").style.display = "block";
+    document.getElementById("colCard").style.display = "block";
+    const colMap = {};
+    colRows.forEach(x => {
+      const k = x.especie + "|" + x.cartera;
+      if (!colMap[k]) colMap[k] = { especie: x.especie, cartera: x.cartera, qty: 0 };
+      colMap[k].qty += x.oq;
+    });
+    const ctb = document.querySelector("#colTable tbody");
+    ctb.innerHTML = "";
+    Object.values(colMap).filter(v => Math.abs(v.qty) > 0.001).sort((a,b) => Math.abs(b.qty) - Math.abs(a.qty)).forEach(v => {
+      ctb.insertAdjacentHTML("beforeend",
+        '<tr><td><b>' + v.especie + '</b></td><td>' + cartTag(v.cartera) + '</td><td class="num ' + (v.qty>=0?'pos':'neg') + '">' + fmt(v.qty) + '</td></tr>');
+    });
+  } else {
+    document.getElementById("colTitle").style.display = "none";
+    document.getElementById("colCard").style.display = "none";
+  }
+
+  renderDetailObli(rows);
+}
+
+function renderDetailObli(rows) {
+  const search = (document.getElementById("searchBoxObli").value || "").toUpperCase();
+  const fMon = document.getElementById("filterMonObli").value;
+  const fCat = document.getElementById("filterCatObli").value;
+  const filtered = rows.filter(x => {
+    if (fMon && x.moneda !== fMon) return false;
+    if (fCat && x.cat !== fCat) return false;
+    if (search) {
+      const blob = (x.asset + " " + x.fn + " " + x.account).toUpperCase();
+      if (blob.indexOf(search) < 0) return false;
+    }
+    return true;
+  });
+  const cartTag = c => c === "CLIENT" ? '<span class="tag payout">CLIENT</span>' : c === "HOUSE" ? '<span class="tag closed">HOUSE</span>' : "-";
+  const tbody = document.querySelector("#detailTableObli tbody");
+  tbody.innerHTML = "";
+  const html = [];
+  filtered.slice(0, 1500).forEach(x => {
+    let catTag = x.cat === "CAUCION" ? '<span class="tag cauc">CAUCI&Oacute;N</span>'
+              : x.cat === "SENEBI"  ? '<span class="tag sb">SENEBI</span>'
+              : x.cat === "CONTADO" ? '<span class="tag cont">CONTADO</span>'
+              : x.cat === "COLLATERAL" ? '<span class="tag pending">COLLATERAL</span>'
+              : x.cat;
+    html.push('<tr>' +
+      '<td>' + cartTag(x.cartera) + '</td>' +
+      '<td>' + catTag + '</td>' +
+      '<td><b>' + (x.moneda||"-") + '</b></td>' +
+      '<td>' + (x.especie||"-") + '</td>' +
+      '<td>' + x.asset + '</td>' +
+      '<td style="font-size:11px;">' + x.fn + '</td>' +
+      '<td>' + x.sd + '</td>' +
+      '<td class="num ' + (x.oa>=0?'pos':'neg') + '">' + fmt(x.oa) + '</td>' +
+      '<td class="num ' + (x.oq>=0?'pos':'neg') + '">' + fmt(x.oq) + '</td>' +
+      '<td>' + (x.subType||"") + '</td>' +
+      '</tr>');
+  });
+  tbody.innerHTML = html.join("");
+  document.getElementById("detailCountObli").textContent =
+    (filtered.length > 1500 ? "Mostrando 1500 de " + filtered.length + " filas" : filtered.length + " filas mostradas");
+}
+
+function exportObliCSV() {
+  if (!DATA_OBLI_CLIENT && !DATA_OBLI_HOUSE) { showErrorObli("Carg&aacute; al menos un archivo antes de exportar."); return; }
+  const fechaCtrl = document.getElementById("fechaObli").value || todayISO();
+  const all = [];
+  if (DATA_OBLI_CLIENT) all.push(...DATA_OBLI_CLIENT.ROWS);
+  if (DATA_OBLI_HOUSE)  all.push(...DATA_OBLI_HOUSE.ROWS);
+  const headers = ["Cartera","Tipo","Moneda","Especie","Asset","Filter Node","Settlement Date","Open Amount","Open Quantity","Sub Type","Account"];
+  const lines = [headers.map(csvEscape).join(",")];
+  all.forEach(x => {
+    if (x.sd !== fechaCtrl) return;
+    if (activeCartera !== "all" && x.cartera !== activeCartera) return;
+    lines.push([x.cartera, x.cat, x.moneda, x.especie, x.asset, x.fn, x.sd, x.oa, x.oq, x.subType, x.account].map(csvEscape).join(","));
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "Obligations_" + (activeCartera==="all"?"Consolidado":activeCartera) + "_" + fechaCtrl + ".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================================
+   LISTENERS
+   ========================================================================= */
+function setupTitulosToggle(toolbarId, detId, netoId) {
+  const tb = document.getElementById(toolbarId);
+  if (!tb) return;
+  tb.addEventListener("click", e => {
+    const btn = e.target.closest('[data-tit-view]');
+    if (!btn) return;
+    tb.querySelectorAll('[data-tit-view]').forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const v = btn.dataset.titView;
+    document.getElementById(detId).style.display = v === "det" ? "block" : "none";
+    document.getElementById(netoId).style.display = v === "neto" ? "block" : "none";
+  });
+}
+
 document.addEventListener("DOMContentLoaded", function() {
+  setupTabs();
+  document.getElementById("fechaIni").value = todayISO();
+  document.getElementById("fechaObli").value = todayISO();
+  setupTitulosToggle("titulosTabIni",  "titulosDetIni",  "titulosNetoIni");
+  setupTitulosToggle("titulosTabCie",  "titulosDetCie",  "titulosNetoCie");
+  setupTitulosToggle("titulosTabObli", "titulosDetObli", "titulosNetoObli");
+
+  /* ---- Tab 1: Inicio del día ---- */
+  const dzI = document.getElementById("dropzoneIni");
+  const fiI = document.getElementById("fileInputIni");
+  dzI.addEventListener("click", () => fiI.click());
+  fiI.addEventListener("change", e => { if (e.target.files[0]) loadFileIni(e.target.files[0]); });
+  dzI.addEventListener("dragover", e => { e.preventDefault(); dzI.classList.add("dragover"); });
+  dzI.addEventListener("dragleave", () => dzI.classList.remove("dragover"));
+  dzI.addEventListener("drop", e => { e.preventDefault(); dzI.classList.remove("dragover"); if (e.dataTransfer.files[0]) loadFileIni(e.dataTransfer.files[0]); });
+
+  document.getElementById("pasteToggleIni").addEventListener("click", () => {
+    const a = document.getElementById("pasteAreaIni");
+    a.style.display = a.style.display === "none" || !a.style.display ? "block" : "none";
+  });
+  document.getElementById("pasteLoadIni").addEventListener("click", () => {
+    const text = document.getElementById("pasteTextIni").value;
+    if (!text.trim()) { showErrorIni("Pegá CSV antes de procesar."); return; }
+    document.getElementById("fileNameIni").textContent = "(pegado)";
+    try {
+      const firstLine = text.split(/\r?\n/)[0] || "";
+      let matrix;
+      if (firstLine.indexOf("\t") > 0 && firstLine.indexOf(",") < 0) matrix = text.split(/\r?\n/).filter(l => l.length > 0).map(l => l.split("\t"));
+      else matrix = parseCSVText(text);
+      ingestIni(matrix);
+    } catch (err) { showErrorIni("Error: " + err.message); }
+  });
+
+  document.getElementById("recalcBtn").addEventListener("click", () => DATA_INI && renderIni());
+  document.getElementById("saveLocalBtn").addEventListener("click", saveManualLocal);
+  document.getElementById("loadLocalBtn").addEventListener("click", loadManualLocal);
+  document.getElementById("clearManualBtn").addEventListener("click", clearManual);
+  document.querySelectorAll("#manualBody input").forEach(inp => {
+    inp.addEventListener("input", () => { if (DATA_INI) renderIni(); });
+  });
+  document.getElementById("fechaIni").addEventListener("change", () => { if (DATA_INI) renderIni(); });
+  document.getElementById("searchBoxIni").addEventListener("input", () => { if (DATA_INI) renderIni(); });
+  document.getElementById("filterMonIni").addEventListener("change", () => { if (DATA_INI) renderIni(); });
+  document.getElementById("filterCatIni").addEventListener("change", () => { if (DATA_INI) renderIni(); });
+  document.getElementById("exportBtnIni").addEventListener("click", exportIniCSV);
+
+  /* ---- Tab 2: Cierre (lógica original BYMA Settlement Instructions) ---- */
   const dz = document.getElementById("dropzone");
   const fi = document.getElementById("fileInput");
   dz.addEventListener("click", function(){ fi.click(); });
@@ -594,7 +1806,7 @@ document.addEventListener("DOMContentLoaded", function() {
   dz.addEventListener("dragover", function(e){ e.preventDefault(); dz.classList.add("dragover"); });
   dz.addEventListener("dragleave", function(){ dz.classList.remove("dragover"); });
   dz.addEventListener("drop", function(e){ e.preventDefault(); dz.classList.remove("dragover"); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
- 
+
   document.getElementById("pasteToggle").addEventListener("click", function(){
     const a = document.getElementById("pasteArea");
     a.style.display = a.style.display === "none" || !a.style.display ? "block" : "none";
@@ -604,7 +1816,6 @@ document.addEventListener("DOMContentLoaded", function() {
     if (!text.trim()) { showError("Pega CSV antes de procesar."); return; }
     document.getElementById("fileName").textContent = "(pegado)";
     try {
-      // Try CSV first; if no commas in first line, try tab-separated
       let firstLine = text.split(/\r?\n/)[0] || "";
       let matrix;
       if (firstLine.indexOf("\t") > 0 && firstLine.indexOf(",") < 0) {
@@ -618,7 +1829,7 @@ document.addEventListener("DOMContentLoaded", function() {
       showError("Error al procesar el texto pegado: " + err.message);
     }
   });
- 
+
   document.getElementById("searchBox").addEventListener("input", renderDetail);
   document.getElementById("filterDir").addEventListener("change", renderDetail);
   document.getElementById("filterState").addEventListener("change", renderDetail);
@@ -631,7 +1842,7 @@ document.addEventListener("DOMContentLoaded", function() {
       renderDetail();
     });
   });
- 
+
   document.getElementById("exportBtn").addEventListener("click", function(){
     if (RAW.length === 0) { showError("Carga un archivo antes de exportar."); return; }
     const valid = RAW.filter(r => r[H("State")] !== "POOLED" && r[H("External State")] !== "CANCELLED");
@@ -645,15 +1856,42 @@ document.addEventListener("DOMContentLoaded", function() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
+
+  /* ---- Tab 3: Obligations Client + House ---- */
+  const dzC = document.getElementById("dropzoneClient");
+  const fiC = document.getElementById("fileInputClient");
+  dzC.addEventListener("click", () => fiC.click());
+  fiC.addEventListener("change", e => { if (e.target.files[0]) loadFileObli(e.target.files[0], "CLIENT"); });
+  dzC.addEventListener("dragover", e => { e.preventDefault(); dzC.classList.add("dragover"); });
+  dzC.addEventListener("dragleave", () => dzC.classList.remove("dragover"));
+  dzC.addEventListener("drop", e => { e.preventDefault(); dzC.classList.remove("dragover"); if (e.dataTransfer.files[0]) loadFileObli(e.dataTransfer.files[0], "CLIENT"); });
+
+  const dzH = document.getElementById("dropzoneHouse");
+  const fiH = document.getElementById("fileInputHouse");
+  dzH.addEventListener("click", () => fiH.click());
+  fiH.addEventListener("change", e => { if (e.target.files[0]) loadFileObli(e.target.files[0], "HOUSE"); });
+  dzH.addEventListener("dragover", e => { e.preventDefault(); dzH.classList.add("dragover"); });
+  dzH.addEventListener("dragleave", () => dzH.classList.remove("dragover"));
+  dzH.addEventListener("drop", e => { e.preventDefault(); dzH.classList.remove("dragover"); if (e.dataTransfer.files[0]) loadFileObli(e.dataTransfer.files[0], "HOUSE"); });
+
+  document.querySelectorAll('[data-cart]').forEach(b => {
+    b.addEventListener("click", () => {
+      document.querySelectorAll('[data-cart]').forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      activeCartera = b.dataset.cart;
+      if (DATA_OBLI_CLIENT || DATA_OBLI_HOUSE) renderObli();
+    });
+  });
+
+  document.querySelectorAll("#manualBodyObli input").forEach(inp => {
+    inp.addEventListener("input", () => { if (DATA_OBLI_CLIENT || DATA_OBLI_HOUSE) renderObli(); });
+  });
+  document.getElementById("fechaObli").addEventListener("change", () => { if (DATA_OBLI_CLIENT || DATA_OBLI_HOUSE) renderObli(); });
+  document.getElementById("searchBoxObli").addEventListener("input", () => { if (DATA_OBLI_CLIENT || DATA_OBLI_HOUSE) renderObli(); });
+  document.getElementById("filterMonObli").addEventListener("change", () => { if (DATA_OBLI_CLIENT || DATA_OBLI_HOUSE) renderObli(); });
+  document.getElementById("filterCatObli").addEventListener("change", () => { if (DATA_OBLI_CLIENT || DATA_OBLI_HOUSE) renderObli(); });
+  document.getElementById("exportBtnObli").addEventListener("click", exportObliCSV);
 });
- 
-function csvEscape(s) {
-  s = s == null ? "" : String(s);
-  if (s.indexOf(",") >= 0 || s.indexOf('"') >= 0 || s.indexOf("\n") >= 0) {
-    return '"' + s.replace(/"/g, '""') + '"';
-  }
-  return s;
-}
 </script>
 </body>
 </html>
