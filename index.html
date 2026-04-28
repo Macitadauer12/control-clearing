@@ -234,8 +234,8 @@ table tr:hover td { background:#f8f9fa; }
       <!-- TÍTULOS — vista principal -->
       <div class="section-title">Neto de T&Iacute;TULOS a COBRAR / ENTREGAR a mercado &mdash; por especie y moneda</div>
       <div class="toolbar" style="margin-bottom:10px;" id="titulosTabIni">
-        <button class="btn-tool active" data-tit-view="det">Detalle (cobrar | entregar)</button>
-        <button class="btn-tool" data-tit-view="neto">NETO consolidado (cobrar &minus; entregar)</button>
+        <button class="btn-tool active" data-tit-view="det">A cobrar | A entregar (neteo por ticker)</button>
+        <button class="btn-tool" data-tit-view="neto">Tabla NETO unificada</button>
       </div>
       <div id="titulosDetIni">
         <div class="tables-grid">
@@ -247,6 +247,10 @@ table tr:hover td { background:#f8f9fa; }
             <h3>A ENTREGAR a mercado (entreg&aacute;s t&iacute;tulos)</h3>
             <table id="topEntregarIni"><thead><tr><th>Especie</th><th>Tipo</th><th>Mon</th><th class="num">Cantidad</th></tr></thead><tbody></tbody></table>
           </div>
+        </div>
+        <div class="table-card" id="compCardIni" style="display:none; margin-top:14px; border-left:4px solid #6c757d;">
+          <h3 style="color:#495057;">Compensados &mdash; Neto = 0 (mismo ticker en ambas direcciones se cancel&oacute;)</h3>
+          <table id="compTableIni"><thead><tr><th>Especie</th><th>Tipo</th><th>Mon</th><th class="num">Cobr&aacute;s</th><th class="num">Entreg&aacute;s</th><th class="num">NETO</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
       <div id="titulosNetoIni" style="display:none;">
@@ -334,8 +338,8 @@ table tr:hover td { background:#f8f9fa; }
 
       <div class="section-title">Neto de T&Iacute;TULOS a COBRAR / ENTREGAR a mercado &mdash; por especie</div>
       <div class="toolbar" style="margin-bottom:10px;" id="titulosTabCie">
-        <button class="btn-tool active" data-tit-view="det">Detalle (cobrar | entregar)</button>
-        <button class="btn-tool" data-tit-view="neto">NETO consolidado (cobrar &minus; entregar)</button>
+        <button class="btn-tool active" data-tit-view="det">A cobrar | A entregar (neteo por ticker)</button>
+        <button class="btn-tool" data-tit-view="neto">Tabla NETO unificada</button>
       </div>
       <div id="titulosDetCie">
         <div class="tables-grid">
@@ -347,6 +351,10 @@ table tr:hover td { background:#f8f9fa; }
             <h3>A ENTREGAR a mercado (PAYIN &gt; PAYOUT)</h3>
             <table id="topEntregar"><thead><tr><th>Asset</th><th>Especie</th><th class="num">Net Qty</th></tr></thead><tbody></tbody></table>
           </div>
+        </div>
+        <div class="table-card" id="compCardCie" style="display:none; margin-top:14px; border-left:4px solid #6c757d;">
+          <h3 style="color:#495057;">Compensados &mdash; Neto = 0 (mismo ticker PAYOUT y PAYIN igual se cancel&oacute;)</h3>
+          <table id="compTableCie"><thead><tr><th>Asset</th><th>Especie</th><th class="num">PAYOUT</th><th class="num">PAYIN</th><th class="num">NETO</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
       <div id="titulosNetoCie" style="display:none;">
@@ -500,8 +508,8 @@ table tr:hover td { background:#f8f9fa; }
       <!-- TÍTULOS NETOS -->
       <div class="section-title">Neto de T&Iacute;TULOS a COBRAR / ENTREGAR a mercado &mdash; por especie y moneda</div>
       <div class="toolbar" style="margin-bottom:10px;" id="titulosTabObli">
-        <button class="btn-tool active" data-tit-view="det">Detalle (cobrar | entregar)</button>
-        <button class="btn-tool" data-tit-view="neto">NETO consolidado (cobrar &minus; entregar)</button>
+        <button class="btn-tool active" data-tit-view="det">A cobrar | A entregar (neteo por ticker)</button>
+        <button class="btn-tool" data-tit-view="neto">Tabla NETO unificada</button>
       </div>
       <div id="titulosDetObli">
         <div class="tables-grid">
@@ -513,6 +521,10 @@ table tr:hover td { background:#f8f9fa; }
             <h3>A ENTREGAR a mercado (entreg&aacute;s t&iacute;tulos)</h3>
             <table id="topEntregarObli"><thead><tr><th>Especie</th><th>Tipo</th><th>Mon</th><th>Cartera</th><th class="num">Cantidad</th></tr></thead><tbody></tbody></table>
           </div>
+        </div>
+        <div class="table-card" id="compCardObli" style="display:none; margin-top:14px; border-left:4px solid #6c757d;">
+          <h3 style="color:#495057;">Compensados &mdash; Neto = 0 (mismo ticker en ambas direcciones se cancel&oacute;)</h3>
+          <table id="compTableObli"><thead><tr><th>Especie</th><th>Tipo</th><th>Mon</th><th>Cartera</th><th class="num">Cobr&aacute;s</th><th class="num">Entreg&aacute;s</th><th class="num">NETO</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
       <div id="titulosNetoObli" style="display:none;">
@@ -824,6 +836,18 @@ function getEspecie(asset) {
   const i = String(asset).indexOf("-");
   return i > 0 ? String(asset).slice(0, i).trim() : String(asset).trim();
 }
+function normalizeTicker(s) {
+  // Normaliza el codigo de especie para que mismo titulo en distintas monedas agrupe.
+  // BYMA: ticker terminado en D = MEP, C = Cable, sin sufijo = pesos.
+  // Ejemplos: AL30, AL30D, AL30C → todos agrupan como AL30
+  //           GD30, GD30D, GD30C → todos como GD30
+  //           BPOB7 → BPOB7 (no toca, no termina en D/C despues de digito)
+  //           TX26 → TX26 (no toca)
+  let t = String(s || "").toUpperCase().trim();
+  // Strippeamos D o C SOLO si viene precedido por un digito (convencion BYMA para variante de moneda)
+  t = t.replace(/(\d)[DC]$/, "$1");
+  return t;
+}
 
 function processActualPositions(matrix) {
   if (!matrix || matrix.length < 2) throw new Error("El archivo no tiene datos suficientes.");
@@ -928,42 +952,87 @@ function renderIni() {
   document.getElementById("sbRowsIni").textContent   = todayRows.filter(x => x.cat === "SENEBI").length.toLocaleString("es-AR");
   document.getElementById("ctRowsIni").textContent   = todayRows.filter(x => x.cat === "CONTADO").length.toLocaleString("es-AR");
 
-  /* ============ TÍTULOS NETOS POR ESPECIE ============ */
-  /* Sólo Contado y SENEBI tienen títulos. Cauciones son cash, no títulos. */
+  /* ============ TÍTULOS NETOS POR ESPECIE ============
+     UNA fila por ticker. Net por fila = LQ - |SQ| (igual logica que Obligations: un valor firmado por fila).
+     Trata SQ como magnitud para que funcione tanto si BYMA lo manda firmado como sin signo.
+     Si net > 0 → A COBRAR. Si net < 0 → A ENTREGAR. Si net = 0 con movimientos → COMPENSADO. */
   const especies = {};
   todayRows.forEach(x => {
-    if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
-    const key = x.especie + "|" + x.cat + "|" + x.moneda;
-    if (!especies[key]) especies[key] = { especie: x.especie, cat: x.cat, moneda: x.moneda, qty: 0, n: 0 };
-    especies[key].qty += (x.sq + x.lq);
-    especies[key].n++;
+    if (x.cat === "CAUCION") return;
+    const key = normalizeTicker(x.especie);
+    if (!key) return;
+    if (key === normalizeTicker(x.moneda)) return;          // fila cash disfrazada
+    if (Math.abs(x.sq) < 0.0001 && Math.abs(x.lq) < 0.0001) return;
+    if (!especies[key]) especies[key] = { especie: key, monedas: new Set(), tipos: new Set(), plus: 0, minus: 0, qty: 0 };
+    if (x.moneda) especies[key].monedas.add(x.moneda);
+    if (x.cat) especies[key].tipos.add(x.cat);
+    // Net firmado por fila: long en positivo (recibis) - short en magnitud (entregas).
+    // Asi para "vendi 570k": LQ=0, SQ=570k -> q=-570k (entregas)
+    // Para "compre 570k":   LQ=570k, SQ=0 -> q=+570k (cobras)
+    const q = x.lq - Math.abs(x.sq);
+    if (q > 0) especies[key].plus += q;
+    else if (q < 0) especies[key].minus += -q;
+    especies[key].qty += q;
   });
-  const arr = Object.values(especies).filter(v => Math.abs(v.qty) > 0.001);
-  const recibir = arr.filter(v => v.qty > 0).sort((a, b) => b.qty - a.qty);
+  const arr = Object.values(especies).filter(v => Math.abs(v.qty) > 0.5);
+  const compensados = Object.values(especies).filter(v => Math.abs(v.qty) <= 0.5 && (v.plus > 0.5 || v.minus > 0.5));
+  const recibir  = arr.filter(v => v.qty > 0).sort((a, b) => b.qty - a.qty);
   const entregar = arr.filter(v => v.qty < 0).sort((a, b) => a.qty - b.qty);
-  const tagFor = c => c === "SENEBI" ? '<span class="tag sb">SB</span>' : '<span class="tag cont">CT</span>';
+  const tipoTagsFor = v => Array.from(v.tipos).map(t =>
+    t === "SENEBI"  ? '<span class="tag sb">SB</span>' :
+    t === "CONTADO" ? '<span class="tag cont">CT</span>' :
+    '<span class="tag pending">' + t + '</span>'
+  ).join(" ") || "-";
   const trec = document.querySelector("#topRecibirIni tbody"); trec.innerHTML = "";
   recibir.forEach(v => {
+    const monedasStr = Array.from(v.monedas).join(", ") || "-";
+    const detalle = (v.minus > 0.001) ? '<span style="font-size:10px;color:#6c757d;"> (cobr&aacute;s ' + fmt(v.plus) + ' / entreg&aacute;s ' + fmt(v.minus) + ')</span>' : '';
     trec.insertAdjacentHTML("beforeend",
-      '<tr><td><b>' + v.especie + '</b></td><td>' + tagFor(v.cat) + '</td><td>' + v.moneda + '</td><td class="num pos">' + fmt(v.qty) + '</td></tr>');
+      '<tr><td><b>' + v.especie + '</b>' + detalle + '</td><td>' + tipoTagsFor(v) + '</td><td>' + monedasStr + '</td><td class="num pos"><b>' + fmt(v.qty) + '</b></td></tr>');
   });
   if (!recibir.length) trec.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888">Sin t&iacute;tulos a recibir</td></tr>';
   const tent = document.querySelector("#topEntregarIni tbody"); tent.innerHTML = "";
   entregar.forEach(v => {
+    const monedasStr = Array.from(v.monedas).join(", ") || "-";
+    const detalle = (v.plus > 0.001) ? '<span style="font-size:10px;color:#6c757d;"> (cobr&aacute;s ' + fmt(v.plus) + ' / entreg&aacute;s ' + fmt(v.minus) + ')</span>' : '';
     tent.insertAdjacentHTML("beforeend",
-      '<tr><td><b>' + v.especie + '</b></td><td>' + tagFor(v.cat) + '</td><td>' + v.moneda + '</td><td class="num neg">' + fmt(v.qty) + '</td></tr>');
+      '<tr><td><b>' + v.especie + '</b>' + detalle + '</td><td>' + tipoTagsFor(v) + '</td><td>' + monedasStr + '</td><td class="num neg"><b>' + fmt(v.qty) + '</b></td></tr>');
   });
   if (!entregar.length) tent.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888">Sin t&iacute;tulos a entregar</td></tr>';
 
-  /* ============ NETO consolidado UNA fila por ticker (combina CT+SB+monedas) ============ */
+  /* ============ COMPENSADOS (NETO = 0) ============ */
+  const compCard = document.getElementById("compCardIni");
+  const compBody = document.querySelector("#compTableIni tbody");
+  compBody.innerHTML = "";
+  if (compensados.length > 0) {
+    compCard.style.display = "block";
+    compensados.sort((a,b) => Math.max(b.plus, b.minus) - Math.max(a.plus, a.minus));
+    compensados.forEach(v => {
+      const monedasStr = Array.from(v.monedas).join(", ") || "-";
+      compBody.insertAdjacentHTML("beforeend",
+        '<tr><td><b>' + v.especie + '</b></td><td>' + tipoTagsFor(v) + '</td><td>' + monedasStr + '</td>' +
+        '<td class="num pos">' + fmt(v.plus) + '</td>' +
+        '<td class="num neg">' + fmt(v.minus) + '</td>' +
+        '<td class="num"><b>0,00</b></td></tr>');
+    });
+  } else {
+    compCard.style.display = "none";
+  }
+
+  /* ============ NETO consolidado UNA fila por ticker (combina CT+SB+monedas+OTRO) ============
+     Mismo neteo que la vista A cobrar | A entregar pero en una sola tabla.
+     Net por fila = LQ - |SQ| (igual logica que Obligations). */
   const netoMap = {};
   todayRows.forEach(x => {
-    if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
-    if (!x.especie) return;
-    const key = x.especie;
-    if (!netoMap[key]) netoMap[key] = { especie: x.especie, monedas: new Set(), plus: 0, minus: 0, neto: 0 };
+    if (x.cat === "CAUCION") return;
+    const key = normalizeTicker(x.especie);
+    if (!key) return;
+    if (key === normalizeTicker(x.moneda)) return;
+    if (Math.abs(x.sq) < 0.0001 && Math.abs(x.lq) < 0.0001) return;
+    if (!netoMap[key]) netoMap[key] = { especie: key, monedas: new Set(), tipos: new Set(), plus: 0, minus: 0, neto: 0 };
     if (x.moneda) netoMap[key].monedas.add(x.moneda);
-    const q = x.sq + x.lq;
+    if (x.cat) netoMap[key].tipos.add(x.cat);
+    const q = x.lq - Math.abs(x.sq);
     if (q > 0) netoMap[key].plus += q;
     else if (q < 0) netoMap[key].minus += -q;
     netoMap[key].neto += q;
@@ -974,8 +1043,9 @@ function renderIni() {
     const cls = Math.abs(v.neto) < 0.001 ? "" : (v.neto > 0 ? "pos" : "neg");
     const badge = Math.abs(v.neto) < 0.001 ? '<span class="tag pending">NETO 0</span>' : (v.neto > 0 ? '<span class="tag payout">COBR&Aacute;S</span>' : '<span class="tag payin">ENTREG&Aacute;S</span>');
     const monedasStr = Array.from(v.monedas).join(", ") || "-";
+    const tiposStr = Array.from(v.tipos).map(t => t === "CONTADO" ? "CT" : t === "SENEBI" ? "SB" : t).join("+") || "-";
     netoBody.insertAdjacentHTML("beforeend",
-      '<tr><td><b>' + v.especie + '</b></td><td>' + monedasStr + '</td>' +
+      '<tr><td><b>' + v.especie + '</b> <span style="font-size:10px;color:#6c757d;">(' + tiposStr + ')</span></td><td>' + monedasStr + '</td>' +
       '<td class="num pos">' + fmt(v.plus) + '</td>' +
       '<td class="num neg">' + fmt(v.minus) + '</td>' +
       '<td class="num ' + cls + '"><b>' + fmt(v.neto) + '</b></td>' +
@@ -1245,7 +1315,9 @@ function render() {
   ok.forEach(r => {
     const a = r[iAsset];
     if (!a || a.indexOf(" - ") < 0) return;
-    const [code, name] = splitAsset(a);
+    const [rawCode, name] = splitAsset(a);
+    const code = normalizeTicker(rawCode);
+    if (!code) return;
     const q = num(r[iNet]);
     const sgn = r[iDir] === "PAYOUT" ? 1 : (r[iDir] === "PAYIN" ? -1 : 0);
     if (!especies[code]) especies[code] = { name, qty: 0, plus: 0, minus: 0, n: 0 };
@@ -1255,19 +1327,40 @@ function render() {
     especies[code].qty += sQ;
     especies[code].n++;
   });
-  const arr = Object.entries(especies).filter(([_, v]) => Math.abs(v.qty) > 0.001);
+  const arr = Object.entries(especies).filter(([_, v]) => Math.abs(v.qty) > 0.5);
+  const compensadosCie = Object.entries(especies).filter(([_, v]) => Math.abs(v.qty) <= 0.5 && (v.plus > 0.5 || v.minus > 0.5));
   const recibir = arr.filter(([_, v]) => v.qty > 0).sort((a, b) => b[1].qty - a[1].qty);
   const entregar = arr.filter(([_, v]) => v.qty < 0).sort((a, b) => a[1].qty - b[1].qty);
   const trec = document.querySelector("#topRecibir tbody"); trec.innerHTML = "";
   recibir.forEach(([k, v]) => {
-    trec.insertAdjacentHTML("beforeend", '<tr><td>' + k + '</td><td>' + v.name + '</td><td class="num pos">' + fmt(v.qty) + '</td></tr>');
+    const detalle = (v.minus > 0.001) ? '<span style="font-size:10px;color:#6c757d;"> (cobr&aacute;s ' + fmt(v.plus) + ' / entreg&aacute;s ' + fmt(v.minus) + ')</span>' : '';
+    trec.insertAdjacentHTML("beforeend", '<tr><td><b>' + k + '</b>' + detalle + '</td><td>' + v.name + '</td><td class="num pos"><b>' + fmt(v.qty) + '</b></td></tr>');
   });
   if (recibir.length === 0) trec.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888">Sin titulos a recibir</td></tr>';
   const tent = document.querySelector("#topEntregar tbody"); tent.innerHTML = "";
   entregar.forEach(([k, v]) => {
-    tent.insertAdjacentHTML("beforeend", '<tr><td>' + k + '</td><td>' + v.name + '</td><td class="num neg">' + fmt(v.qty) + '</td></tr>');
+    const detalle = (v.plus > 0.001) ? '<span style="font-size:10px;color:#6c757d;"> (cobr&aacute;s ' + fmt(v.plus) + ' / entreg&aacute;s ' + fmt(v.minus) + ')</span>' : '';
+    tent.insertAdjacentHTML("beforeend", '<tr><td><b>' + k + '</b>' + detalle + '</td><td>' + v.name + '</td><td class="num neg"><b>' + fmt(v.qty) + '</b></td></tr>');
   });
   if (entregar.length === 0) tent.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#888">Sin titulos a entregar</td></tr>';
+
+  /* ============ COMPENSADOS (NETO = 0) ============ */
+  const compCardCie = document.getElementById("compCardCie");
+  const compBodyCie = document.querySelector("#compTableCie tbody");
+  compBodyCie.innerHTML = "";
+  if (compensadosCie.length > 0) {
+    compCardCie.style.display = "block";
+    compensadosCie.sort((a,b) => Math.max(b[1].plus, b[1].minus) - Math.max(a[1].plus, a[1].minus));
+    compensadosCie.forEach(([k, v]) => {
+      compBodyCie.insertAdjacentHTML("beforeend",
+        '<tr><td><b>' + k + '</b></td><td>' + v.name + '</td>' +
+        '<td class="num pos">' + fmt(v.plus) + '</td>' +
+        '<td class="num neg">' + fmt(v.minus) + '</td>' +
+        '<td class="num"><b>0,00</b></td></tr>');
+    });
+  } else {
+    compCardCie.style.display = "none";
+  }
 
   /* NETO consolidado por especie */
   const netoArrCie = Object.entries(especies).filter(([_, v]) => v.plus > 0.001 || v.minus > 0.001).sort((a,b) => Math.abs(b[1].qty) - Math.abs(a[1].qty));
@@ -1530,44 +1623,91 @@ function renderObli() {
   document.getElementById("rowsObli").textContent = rows.length.toLocaleString("es-AR");
   document.getElementById("rowsCol").textContent  = rows.filter(x => x.cat === "COLLATERAL").length.toLocaleString("es-AR");
 
-  /* ============ TÍTULOS NETOS POR ESPECIE (excluye cash y collateral) ============ */
+  /* ============ TÍTULOS NETOS POR ESPECIE (UNA fila por ticker, excluye cash y collateral) ============
+     Net = Open Quantity (firmado) combinando CT+SB+monedas+carteras.
+     Si net > 0 → A COBRAR. Si net < 0 → A ENTREGAR. Si net = 0 con movimientos → COMPENSADO. */
   const especies = {};
   rows.forEach(x => {
-    if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
+    if (x.cat === "CAUCION" || x.cat === "COLLATERAL") return;
     if (x.isCash) return;
-    if (!x.especie) return;
-    const key = x.especie + "|" + x.cat + "|" + x.moneda + "|" + (activeCartera === "all" ? x.cartera : "_");
-    if (!especies[key]) especies[key] = { especie: x.especie, cat: x.cat, moneda: x.moneda, cartera: x.cartera, qty: 0 };
+    const key = normalizeTicker(x.especie);
+    if (!key) return;
+    if (key === normalizeTicker(x.moneda)) return;
+    if (Math.abs(x.oq) < 0.0001) return;
+    if (!especies[key]) especies[key] = { especie: key, monedas: new Set(), tipos: new Set(), carteras: new Set(), plus: 0, minus: 0, qty: 0 };
+    if (x.moneda) especies[key].monedas.add(x.moneda);
+    if (x.cat) especies[key].tipos.add(x.cat);
+    if (x.cartera) especies[key].carteras.add(x.cartera);
+    if (x.oq > 0) especies[key].plus += x.oq;
+    else if (x.oq < 0) especies[key].minus += -x.oq;
     especies[key].qty += x.oq;
   });
-  const arr = Object.values(especies).filter(v => Math.abs(v.qty) > 0.001);
-  const recibir = arr.filter(v => v.qty > 0).sort((a, b) => b.qty - a.qty);
+  const arr = Object.values(especies).filter(v => Math.abs(v.qty) > 0.5);
+  const compensadosObli = Object.values(especies).filter(v => Math.abs(v.qty) <= 0.5 && (v.plus > 0.5 || v.minus > 0.5));
+  const recibir  = arr.filter(v => v.qty > 0).sort((a, b) => b.qty - a.qty);
   const entregar = arr.filter(v => v.qty < 0).sort((a, b) => a.qty - b.qty);
-  const tagFor = c => c === "SENEBI" ? '<span class="tag sb">SB</span>' : '<span class="tag cont">CT</span>';
+  const tipoTagsFor = v => Array.from(v.tipos).map(t =>
+    t === "SENEBI"  ? '<span class="tag sb">SB</span>' :
+    t === "CONTADO" ? '<span class="tag cont">CT</span>' :
+    '<span class="tag pending">' + t + '</span>'
+  ).join(" ") || "-";
   const cartTag = c => c === "CLIENT" ? '<span class="tag payout">CLIENT</span>' : c === "HOUSE" ? '<span class="tag closed">HOUSE</span>' : "-";
+  const cartTagsFor = v => {
+    const arrC = Array.from(v.carteras);
+    if (arrC.length === 0) return "-";
+    if (arrC.length === 1) return cartTag(arrC[0]);
+    return '<span class="tag pending">' + arrC.join("+") + '</span>';
+  };
   const trec = document.querySelector("#topRecibirObli tbody"); trec.innerHTML = "";
   recibir.forEach(v => {
+    const monedasStr = Array.from(v.monedas).join(", ") || "-";
+    const detalle = (v.minus > 0.001) ? '<span style="font-size:10px;color:#6c757d;"> (cobr&aacute;s ' + fmt(v.plus) + ' / entreg&aacute;s ' + fmt(v.minus) + ')</span>' : '';
     trec.insertAdjacentHTML("beforeend",
-      '<tr><td><b>' + v.especie + '</b></td><td>' + tagFor(v.cat) + '</td><td>' + v.moneda + '</td><td>' + cartTag(v.cartera) + '</td><td class="num pos">' + fmt(v.qty) + '</td></tr>');
+      '<tr><td><b>' + v.especie + '</b>' + detalle + '</td><td>' + tipoTagsFor(v) + '</td><td>' + monedasStr + '</td><td>' + cartTagsFor(v) + '</td><td class="num pos"><b>' + fmt(v.qty) + '</b></td></tr>');
   });
   if (!recibir.length) trec.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888">Sin t&iacute;tulos a recibir</td></tr>';
   const tent = document.querySelector("#topEntregarObli tbody"); tent.innerHTML = "";
   entregar.forEach(v => {
+    const monedasStr = Array.from(v.monedas).join(", ") || "-";
+    const detalle = (v.plus > 0.001) ? '<span style="font-size:10px;color:#6c757d;"> (cobr&aacute;s ' + fmt(v.plus) + ' / entreg&aacute;s ' + fmt(v.minus) + ')</span>' : '';
     tent.insertAdjacentHTML("beforeend",
-      '<tr><td><b>' + v.especie + '</b></td><td>' + tagFor(v.cat) + '</td><td>' + v.moneda + '</td><td>' + cartTag(v.cartera) + '</td><td class="num neg">' + fmt(v.qty) + '</td></tr>');
+      '<tr><td><b>' + v.especie + '</b>' + detalle + '</td><td>' + tipoTagsFor(v) + '</td><td>' + monedasStr + '</td><td>' + cartTagsFor(v) + '</td><td class="num neg"><b>' + fmt(v.qty) + '</b></td></tr>');
   });
   if (!entregar.length) tent.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888">Sin t&iacute;tulos a entregar</td></tr>';
 
-  /* ============ NETO consolidado UNA fila por ticker (combina CT+SB+monedas+carteras) ============ */
+  /* ============ COMPENSADOS (NETO = 0) ============ */
+  const compCardObli = document.getElementById("compCardObli");
+  const compBodyObli = document.querySelector("#compTableObli tbody");
+  compBodyObli.innerHTML = "";
+  if (compensadosObli.length > 0) {
+    compCardObli.style.display = "block";
+    compensadosObli.sort((a,b) => Math.max(b.plus, b.minus) - Math.max(a.plus, a.minus));
+    compensadosObli.forEach(v => {
+      const monedasStr = Array.from(v.monedas).join(", ") || "-";
+      compBodyObli.insertAdjacentHTML("beforeend",
+        '<tr><td><b>' + v.especie + '</b></td><td>' + tipoTagsFor(v) + '</td><td>' + monedasStr + '</td><td>' + cartTagsFor(v) + '</td>' +
+        '<td class="num pos">' + fmt(v.plus) + '</td>' +
+        '<td class="num neg">' + fmt(v.minus) + '</td>' +
+        '<td class="num"><b>0,00</b></td></tr>');
+    });
+  } else {
+    compCardObli.style.display = "none";
+  }
+
+  /* ============ NETO consolidado UNA fila por ticker (combina CT+SB+monedas+carteras+OTRO) ============
+     Mismo neteo que la vista A cobrar | A entregar pero en una sola tabla. Excluye CAUCION, COLLATERAL y cash. */
   const netoMapObli = {};
   rows.forEach(x => {
-    if (x.cat !== "CONTADO" && x.cat !== "SENEBI") return;
+    if (x.cat === "CAUCION" || x.cat === "COLLATERAL") return;
     if (x.isCash) return;
-    if (!x.especie) return;
-    const key = x.especie;
-    if (!netoMapObli[key]) netoMapObli[key] = { especie: x.especie, monedas: new Set(), carteras: new Set(), plus: 0, minus: 0, neto: 0 };
+    const key = normalizeTicker(x.especie);
+    if (!key) return;
+    if (key === normalizeTicker(x.moneda)) return;
+    if (Math.abs(x.oq) < 0.0001) return;
+    if (!netoMapObli[key]) netoMapObli[key] = { especie: key, monedas: new Set(), carteras: new Set(), tipos: new Set(), plus: 0, minus: 0, neto: 0 };
     if (x.moneda) netoMapObli[key].monedas.add(x.moneda);
     if (x.cartera) netoMapObli[key].carteras.add(x.cartera);
+    if (x.cat) netoMapObli[key].tipos.add(x.cat);
     if (x.oq > 0) netoMapObli[key].plus += x.oq;
     else if (x.oq < 0) netoMapObli[key].minus += -x.oq;
     netoMapObli[key].neto += x.oq;
@@ -1578,12 +1718,13 @@ function renderObli() {
     const cls = Math.abs(v.neto) < 0.001 ? "" : (v.neto > 0 ? "pos" : "neg");
     const badge = Math.abs(v.neto) < 0.001 ? '<span class="tag pending">NETO 0</span>' : (v.neto > 0 ? '<span class="tag payout">COBR&Aacute;S</span>' : '<span class="tag payin">ENTREG&Aacute;S</span>');
     const monedasStr = Array.from(v.monedas).join(", ") || "-";
+    const tiposStr = Array.from(v.tipos).map(t => t === "CONTADO" ? "CT" : t === "SENEBI" ? "SB" : t).join("+") || "-";
     const carterasArr = Array.from(v.carteras);
     const carterasHtml = carterasArr.length === 0 ? "-"
                        : carterasArr.length === 1 ? cartTag(carterasArr[0])
                        : '<span class="tag pending">' + carterasArr.join("+") + '</span>';
     netoBodyObli.insertAdjacentHTML("beforeend",
-      '<tr><td><b>' + v.especie + '</b></td><td>' + monedasStr + '</td><td>' + carterasHtml + '</td>' +
+      '<tr><td><b>' + v.especie + '</b> <span style="font-size:10px;color:#6c757d;">(' + tiposStr + ')</span></td><td>' + monedasStr + '</td><td>' + carterasHtml + '</td>' +
       '<td class="num pos">' + fmt(v.plus) + '</td>' +
       '<td class="num neg">' + fmt(v.minus) + '</td>' +
       '<td class="num ' + cls + '"><b>' + fmt(v.neto) + '</b></td>' +
@@ -1901,6 +2042,7 @@ document.addEventListener("DOMContentLoaded", function() {
   document.getElementById("filterCatObli").addEventListener("change", () => { if (DATA_OBLI_CLIENT || DATA_OBLI_HOUSE) renderObli(); });
   document.getElementById("exportBtnObli").addEventListener("click", exportObliCSV);
 });
+/* v3 - Vista A cobrar | A entregar con neteo por ticker (CT+SB+monedas combinados) */
 </script>
 </body>
 </html>
