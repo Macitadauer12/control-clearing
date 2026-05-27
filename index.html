@@ -668,6 +668,153 @@ body { background:var(--bg); color:var(--text); font-size:13.5px; line-height:1.
 .move-suggestions .arrow { color:var(--blue-600); font-weight:700; }
 .move-suggestions .qty { color:var(--navy-900); font-weight:700; font-family:var(--font-mono); }
 
+/* ============ CONCILIACION UNIFICADA: master/detail ============ */
+.recon-advanced {
+  margin:14px 0 6px;
+  padding:8px 12px;
+  background:var(--surface-alt);
+  border:1px solid var(--border-soft);
+  border-radius:8px;
+}
+.recon-advanced > summary {
+  cursor:pointer;
+  font-size:11.5px; font-weight:600;
+  color:var(--text-muted);
+  letter-spacing:0.3px;
+  list-style:none;
+  padding:4px 0;
+}
+.recon-advanced > summary::-webkit-details-marker { display:none; }
+.recon-advanced > summary::before {
+  content:"▸";
+  display:inline-block;
+  margin-right:8px;
+  color:var(--blue-600);
+  transition:transform 0.15s;
+}
+.recon-advanced[open] > summary::before { transform:rotate(90deg); }
+.recon-advanced > summary b { color:var(--navy-900); font-weight:700; }
+
+#reconUnifiedList { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+
+.recon-row {
+  background:white;
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+  transition:border-color 0.15s, box-shadow 0.15s;
+}
+.recon-row:hover { border-color:var(--border-strong); }
+.recon-row.expanded { box-shadow:var(--shadow-sm); border-color:var(--border-strong); }
+
+.recon-row-header {
+  display:flex; align-items:center; justify-content:space-between;
+  gap:14px; padding:10px 14px;
+  cursor:pointer;
+  user-select:none;
+  background:linear-gradient(180deg, white 0%, var(--surface-alt) 100%);
+}
+.recon-row-header:hover { background:linear-gradient(180deg, var(--blue-50) 0%, white 100%); }
+.recon-row.expanded .recon-row-header {
+  background:linear-gradient(180deg, var(--bg-alt) 0%, white 100%);
+  border-bottom:1px solid var(--border-soft);
+}
+
+.recon-row-toggle {
+  display:inline-flex; align-items:center; gap:10px;
+  font-weight:700; font-size:13px; color:var(--navy-900);
+  min-width:0;
+}
+.recon-row-toggle .caret {
+  display:inline-block;
+  color:var(--text-muted);
+  font-size:11px;
+  transition:transform 0.15s;
+  width:12px;
+}
+.recon-row.expanded .recon-row-toggle .caret { transform:rotate(90deg); color:var(--blue-600); }
+.recon-row-toggle code {
+  font-family:var(--font-mono); font-size:11.5px;
+  background:var(--bg-alt);
+  padding:2px 8px; border-radius:5px;
+  color:var(--navy-900);
+}
+.recon-row-toggle .ticker {
+  font-size:11px; color:var(--text-muted); font-weight:500;
+  margin-left:4px;
+}
+
+.recon-row-totals {
+  display:inline-flex; align-items:center; gap:14px;
+  font-size:11.5px; color:var(--text-muted);
+  flex-wrap:wrap; justify-content:flex-end;
+}
+.recon-row-totals > span {
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.recon-row-totals > span b {
+  color:var(--navy-900); font-weight:700; font-family:var(--font-mono);
+  margin-left:3px;
+}
+.recon-row-diff {
+  font-family:var(--font-mono); font-weight:700;
+  padding:3px 9px; border-radius:5px;
+  font-variant-numeric:tabular-nums;
+}
+.recon-row-diff.ok       { background:#D1FAE5; color:#065F46; }
+.recon-row-diff.expl     { background:#FEF3C7; color:#92400E; }
+.recon-row-diff.descalce { background:#FEE2E2; color:#991B1B; }
+.recon-row-diff.solo     { background:#E0E7FF; color:#3730A3; }
+
+.recon-row-body {
+  max-height:0; overflow:hidden;
+  transition:max-height 0.25s ease-out;
+}
+.recon-row.expanded .recon-row-body {
+  max-height:2000px;
+  transition:max-height 0.35s ease-in;
+}
+.recon-row-body-inner { padding:12px 16px 14px; }
+.recon-row-body table { width:100%; border-collapse:collapse; margin-top:4px; }
+.recon-row-body th, .recon-row-body td {
+  padding:6px 10px; text-align:left; border-bottom:1px solid var(--border-soft);
+  font-size:12px;
+}
+.recon-row-body th {
+  background:var(--bg-alt); font-weight:600; color:var(--text-muted);
+  font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px;
+}
+.recon-row-body td.num { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--font-mono); }
+.recon-row-body tr.surplus  td { background:rgba(16,185,129,0.04); }
+.recon-row-body tr.deficit  td { background:rgba(239,68,68,0.04); }
+.recon-row-body tr.settle   td { background:rgba(99,102,241,0.05); }
+.recon-row-body tr.surplus td.num.diff { color:#065F46; font-weight:700; }
+.recon-row-body tr.deficit td.num.diff { color:#991B1B; font-weight:700; }
+.recon-row-body tr.settle  td.num.diff { color:#3730A3; font-weight:700; }
+.recon-row-body .badge-settle {
+  display:inline-block; padding:1px 6px; border-radius:9px;
+  background:#E0E7FF; color:#3730A3;
+  font-size:9.5px; font-weight:700; letter-spacing:0.5px; margin-left:6px;
+  text-transform:uppercase;
+}
+.recon-row-extra-totals {
+  display:flex; gap:12px; flex-wrap:wrap;
+  font-size:11px; color:var(--text-muted);
+  margin-bottom:6px;
+}
+.recon-row-extra-totals span b { color:var(--navy-900); font-family:var(--font-mono); }
+.recon-row-empty {
+  padding:18px; text-align:center;
+  color:var(--text-muted); font-size:12px;
+  border:1px dashed var(--border); border-radius:8px;
+  background:var(--surface-alt);
+}
+@media (max-width:820px) {
+  .recon-row-header { flex-direction:column; align-items:flex-start; gap:8px; }
+  .recon-row-totals { justify-content:flex-start; }
+}
+
 /* ============ TAB NAV (Saldos | Obligations) ============ */
 .view-tabs {
   display:inline-flex;
@@ -1731,11 +1878,21 @@ table tr:last-child td { border-bottom:none; }
   </div><!-- /view-obli -->
 
   <!-- ============================================================ -->
-  <!--           VISTA 3: CONCILIACION DE TITULOS (hub unificado)       -->
+  <!--   VISTA 3: CONCILIACION DE TITULOS UNIFICADA (totales + comitentes)  -->
   <!-- ============================================================ -->
   <div class="view-section" id="view-recon" role="tabpanel" aria-labelledby="tab-recon">
 
-    <!-- Slots cuadrados (compactos) -->
+    <div class="block-header">
+      <h2>Conciliaci&oacute;n de T&iacute;tulos</h2>
+      <div class="bh-sub">CV + AUNE + Clearing + Gar.AUNE &middot; totales por especie y detalle por comitente en un solo lugar</div>
+      <div class="bh-desc">
+        <b>C&oacute;mo funciona:</b> cargo los 4 archivos. Cada uno trae <b>comitente &middot; especie &middot; cantidad</b>, as&iacute; que el sistema deriva autom&aacute;ticamente los totales por especie <i>y</i> el detalle por comitente. Si hay descalce, al expandir la fila se ven los comitentes involucrados y las transferencias listas para el SI.2. Las cuentas <b>SETTLE</b> (80011/22.., 80011/55.., 70011/...) se usan como emisoras autom&aacute;ticamente. <b>Clearing</b> y <b>Garant&iacute;as AUNE</b> son opcionales: si est&aacute;n cargados, detectan "probable error en garant&iacute;as".
+      </div>
+    </div>
+
+    <!-- 4 dropzones originales: cada archivo trae comitente + especie + cantidad,
+         entonces desde aca derivamos tanto los totales por especie como el detalle
+         por comitente que dispara las transferencias del SI.2 -->
     <div class="dropzone-grid">
       <div class="dz-square" id="dropzoneCV" tabindex="0" role="button" aria-label="Cargar Caja de Valores">
         <div class="dz-icon">CV</div>
@@ -1767,90 +1924,35 @@ table tr:last-child td { border-bottom:none; }
       </div>
     </div>
 
-    <div class="block-header">
-      <h2>Conciliaci&oacute;n de T&iacute;tulos</h2>
-      <div class="bh-sub">Caja de Valores vs AUNE &middot; Clearing + Garant&iacute;as AUNE &middot; vista global por especie</div>
-      <div class="bh-desc">
-        <b>L&oacute;gica del control:</b> <b>AUNE</b> es el saldo correcto. Cruzamos por <b>c&oacute;digo CVSA</b>.
-        <br><b>F&oacute;rmula:</b> diff<sub>cant</sub> = AUNE &minus; Caja &nbsp;&middot;&nbsp; diff<sub>gar</sub> = Clearing &minus; Gar.AUNE.
-        Si los dos diffs son iguales &rarr; <b>un solo problema</b> (probable error en garant&iacute;as) &middot; si se cancelan &rarr; <b>compensado</b> &middot; sino se suman.
-      </div>
-    </div>
-
     <div id="dashboardRecon" style="display:none;">
+
+      <!-- Toolbar: filtros + acciones -->
+      <div class="recon-actions">
+        <label class="recon-toggle" style="display:inline-flex;"><input type="checkbox" id="reconOnlyDiff" checked> Solo descalces</label>
+        <label class="recon-toggle" style="display:inline-flex;" title="Incluye en el SI.2 las transferencias EMISORAS desde 80011/22.., 80011/55.. (fondeo garantias) y 70011/10000, 70011/50000 (liquidaciones) hacia comitentes."><input type="checkbox" id="commIncludeSettle" checked> Usar SETTLE como emisoras</label>
+        <input type="text" id="searchBoxRecon" placeholder="Buscar especie o comitente..." style="padding:7px 11px; border:1px solid var(--border); border-radius:6px; font-size:12px; min-width:240px;">
+        <span style="flex:1"></span>
+        <button class="btn export" id="exportBtnRecon" title="Exporta el cruce general por especie a CSV">Exportar CSV</button>
+        <button class="btn" id="btnGenSI2" title="Genera el archivo .si2 con las transferencias sugeridas para subir a BYMA. Incluye emisoras desde cuentas SETTLE hacia comitentes.">Generar archivo SI2</button>
+        <button type="button" class="btn-reset-recon" id="btnResetRecon" title="Limpia todos los archivos cargados de Conciliaci&oacute;n">&times; Limpiar</button>
+      </div>
+
+      <!-- Resumen -->
       <div class="summary-bar">
-        <div class="item"><span class="label">Especies en CV</span><span class="value" id="rowsCV">0</span></div>
-        <div class="item"><span class="label">Especies en AUNE</span><span class="value" id="rowsBO">0</span></div>
-        <div class="item"><span class="label">Clearing</span><span class="value" id="rowsGAR">0</span></div>
-        <div class="item"><span class="label">Garantias AUNE</span><span class="value" id="rowsGARBO">0</span></div>
+        <div class="item"><span class="label">Especies analizadas</span><span class="value" id="reconTotalEsp">0</span></div>
+        <div class="item"><span class="label">Comitentes en CV</span><span class="value" id="reconTotalCV">0</span></div>
+        <div class="item"><span class="label">Comitentes en AUNE</span><span class="value" id="reconTotalBO">0</span></div>
+        <div class="item" title="Posiciones detectadas en cuentas SETTLE (80011/22.., 80011/55.., 70011/...) sumando CV + AUNE. Se usan como emisoras en el SI.2."><span class="label">Posiciones SETTLE</span><span class="value" id="commSettleCount">0</span></div>
         <div class="item"><span class="label">OK</span><span class="value success" id="reconOK">0</span></div>
         <div class="item"><span class="label">Explicadas</span><span class="value" id="reconExpl">0</span></div>
         <div class="item"><span class="label">Descalces</span><span class="value danger" id="reconDescalce">0</span></div>
       </div>
+      <div id="commSettleDetected" style="font-size:11.5px; color:var(--text-muted); font-family:var(--font-mono); margin:-4px 0 12px 2px;"></div>
 
-      <div class="recon-actions">
-        <label class="recon-toggle" style="display:inline-flex;"><input type="checkbox" id="reconOnlyDiff"> Mostrar solo descalces y diferencias</label>
-        <button type="button" class="btn-reset-recon" id="btnResetRecon" title="Limpia todos los archivos cargados de Conciliaci&oacute;n">&times; Limpiar Conciliaci&oacute;n</button>
-      </div>
+      <!-- Master/Detail list: una fila por especie, expandible al detalle de comitentes -->
+      <div id="reconUnifiedList"></div>
 
-      <div class="full-table">
-        <div class="controls">
-          <input type="text" id="searchBoxRecon" placeholder="Buscar por Codigo CVSA, ticker, nombre...">
-          <button class="btn export" id="exportBtnRecon">Exportar a CSV</button>
-        </div>
-        <div class="scroll-table">
-          <table id="reconTable">
-            <thead><tr>
-              <th>Codigo CVSA</th><th>Ticker / Nombre</th>
-              <th class="num">Caja Valores</th><th class="num">AUNE</th>
-              <th class="num">Clearing</th><th class="num">Gar. AUNE</th>
-              <th class="num">Diferencia</th><th>Estado</th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        <div class="legend" id="reconCount">0 filas mostradas</div>
-      </div>
-    </div>
-
-    <!-- ============ COMITENTE: header + slots + tablas debajo del cruce general ============ -->
-    <div class="block-header" style="margin-top:32px;">
-      <h2>Conciliaci&oacute;n por Comitentes</h2>
-    </div>
-
-    <div class="dropzone-grid">
-      <div class="dz-square" id="dropzoneCommCV" tabindex="0" role="button" aria-label="Cargar Caja de Valores por comitente">
-        <div class="dz-icon">CV</div>
-        <div class="dz-tag">Por comitente</div>
-        <div class="dz-title">Caja de Valores</div>
-        <div class="dz-file" id="fileNameCommCV">Sin cargar</div>
-        <input type="file" id="fileInputCommCV" accept=".csv,.xlsx,.xlsm,.txt">
-      </div>
-      <div class="dz-square" id="dropzoneCommBO" tabindex="0" role="button" aria-label="Cargar AUNE por comitente">
-        <div class="dz-icon">AU</div>
-        <div class="dz-tag">Por comitente</div>
-        <div class="dz-title">AUNE</div>
-        <div class="dz-file" id="fileNameCommBO">Sin cargar</div>
-        <input type="file" id="fileInputCommBO" accept=".csv,.xlsx,.xlsm,.txt">
-      </div>
-    </div>
-
-    <div class="recon-toggle" style="margin-top:14px;">
-      <label><input type="checkbox" id="commOnlyDiff" checked> Mostrar solo especies con diferencias</label>
-      <label><input type="checkbox" id="commIncludeSettle" checked> Usar cuentas SETTLE como fuente de titulos</label>
-      <input type="text" id="searchBoxComm" placeholder="Buscar especie o comitente..." style="margin-left:10px; padding:7px 11px; border:1px solid var(--border); border-radius:5px; font-size:12px; min-width:240px;">
-      <button class="btn export" id="exportBtnComm">Exportar comitente CSV</button>
-      <button class="btn" id="btnGenSI2" title="Genera el archivo .si2 con las transferencias sugeridas para subir a BYMA">Generar archivo SI2</button>
-    </div>
-
-    <div id="commEspeciesList"></div>
-
-    <div class="summary-bar" style="margin-top:14px;">
-      <div class="item"><span class="label">Especies analizadas</span><span class="value" id="commTotalEspecies">0</span></div>
-      <div class="item"><span class="label">Comitentes en CV</span><span class="value" id="commTotalCV">0</span></div>
-      <div class="item"><span class="label">Comitentes en AUNE</span><span class="value" id="commTotalBO">0</span></div>
-      <div class="item"><span class="label">Especies con descalce</span><span class="value danger" id="commDescalceN">0</span></div>
-      <div class="item"><span class="label">Especies OK</span><span class="value success" id="commOKN">0</span></div>
+      <div class="legend" id="reconCount" style="margin-top:10px;">0 especies mostradas</div>
     </div>
 
     <!-- ============ AV vs AUNE: broker exterior vs sistema ============ -->
@@ -3521,9 +3623,14 @@ function ingestReconFile(matrix, kind, fileName) {
   const codeIdx = _reconFindCol(headers, ["Instrument","Unidad","ISIN","CVSA","CodigoCVSA","CodCVSA","Especie","Ticker","Symbol","Asset","Codigo","Code","Instrumento","Cve","NRO"]);
   const qtyIdx  = _reconFindCol(headers, ["AvailableBalance","Total","SaldoDisponible","AvailableBal","Cantidad","Quantity","Qty","Saldo","Tenencia","Balance","Nominal","Nominales","SaldoNominal","SaldoActual"]);
   const tickIdx = _reconFindCol(headers, ["Unidad","Ticker","Especie","Symbol","Asset","Nombre","Descripcion","Description","Instrument","Instrumento","Title","ISIN"]);
+  // Si el archivo trae columna de comitente, derivamos en simultaneo el detalle por
+  // comitente — asi un solo upload alimenta totales (RECON_*) y comitente (COMM_*).
+  const commIdx = _reconFindCol(headers, ["AccountNumber","Account","Comitente","Cuenta","Cliente","Holder","NumeroCuenta","NumComitente","NroComitente"]);
   if (codeIdx < 0) throw new Error("No encuentro columna de codigo en " + fileName);
   if (qtyIdx  < 0) throw new Error("No encuentro columna de cantidad en " + fileName);
-  const out = {};
+  const out = {};          // totales por especie {code: {qty, ticker}}
+  const outComm = {};      // detalle por comitente {code: {comm: {qty, isSettle}}}
+  let commRowsParsed = 0;
   for (let r = hdrRow + 1; r < matrix.length; r++) {
     const row = matrix[r];
     if (!row || !row.length) continue;
@@ -3541,16 +3648,42 @@ function ingestReconFile(matrix, kind, fileName) {
     } else {
       out[code] = { qty: qty, ticker: tick };
     }
+    // Detalle por comitente: solo si hay columna y solo para CV/BO
+    // (Clearing y Gar.AUNE quedan como totales — su unica funcion es la deteccion
+    //  de error de garantias a nivel agregado).
+    if (commIdx >= 0 && (kind === "CV" || kind === "BO")) {
+      const rawComm = row[commIdx];
+      const comm = _normComitenteUniversal(rawComm);
+      if (comm) {
+        const isSettle = _isSettleAccount(comm) || _isSettleAccount(String(rawComm == null ? "" : rawComm).trim());
+        if (!outComm[code]) outComm[code] = {};
+        if (outComm[code][comm]) outComm[code][comm].qty += qty;
+        else outComm[code][comm] = { qty: qty, isSettle: isSettle };
+        commRowsParsed++;
+      }
+    }
   }
   if (kind === "CV")    RECON_CV    = out;
   if (kind === "BO")    RECON_BO    = out;
   if (kind === "GAR")   RECON_GAR   = out;
   if (kind === "GARBO") RECON_GARBO = out;
+  // Si extrajimos detalle por comitente con exito, popular COMM_CV / COMM_BO
+  if (kind === "CV" && commIdx >= 0 && commRowsParsed > 0) COMM_CV = outComm;
+  if (kind === "BO" && commIdx >= 0 && commRowsParsed > 0) COMM_BO = outComm;
   const labelMap = { CV: "fileNameCV", BO: "fileNameBO", GAR: "fileNameGAR", GARBO: "fileNameGARBO" };
   const dzMap    = { CV: "dropzoneCV", BO: "dropzoneBO", GAR: "dropzoneGAR", GARBO: "dropzoneGARBO" };
   const lbl = document.getElementById(labelMap[kind]);
   const dz  = document.getElementById(dzMap[kind]);
-  if (lbl) lbl.textContent = fileName + " (" + Object.keys(out).length + ")";
+  if (lbl) {
+    // Mostrar conteos: especies + comitentes si se detectaron
+    let txt = fileName + " (" + Object.keys(out).length + " esp";
+    if ((kind === "CV" || kind === "BO") && commIdx >= 0) {
+      const nComm = Object.keys(outComm).reduce(function(s, e) { return s + Object.keys(outComm[e]).length; }, 0);
+      txt += ", " + nComm + " pos";
+    }
+    txt += ")";
+    lbl.textContent = txt;
+  }
   if (dz)  dz.classList.add("loaded");
   renderRecon();
 }
@@ -3566,107 +3699,308 @@ async function loadReconFile(file, kind) {
   }
 }
 
+/* =========================================================================
+   CONCILIACION DE TITULOS UNIFICADA (master/detail)
+   - Fuentes primarias: COMM_CV y COMM_BO (archivos por comitente)
+   - Totales por especie = suma de comitentes
+   - Opcional: RECON_GAR (Clearing) y RECON_GARBO (Garantias AUNE) para
+     detectar "probable error en garantias"
+   - Cada especie es una fila expandible; el detalle muestra los comitentes
+     y las transferencias sugeridas para el SI.2
+   ========================================================================= */
 function renderRecon() {
-  const cv = RECON_CV || {}, bo = RECON_BO || {}, gar = RECON_GAR || {}, garbo = RECON_GARBO || {};
-  const haveAny = RECON_CV || RECON_BO || RECON_GAR || RECON_GARBO || COMM_CV || COMM_BO;
+  const cv = COMM_CV || {}, bo = COMM_BO || {};
+  const gar = RECON_GAR || {}, garbo = RECON_GARBO || {};
+  // Tickers vienen de RECON_* (que los extrae); si solo tenemos COMM_* no hay ticker.
+  const cvTotalsRaw = RECON_CV || {}, boTotalsRaw = RECON_BO || {};
+  const haveAny = COMM_CV || COMM_BO || RECON_CV || RECON_BO || RECON_GAR || RECON_GARBO;
   const dash = document.getElementById("dashboardRecon");
   if (!haveAny) { if (dash) dash.style.display = "none"; return; }
   if (dash) dash.style.display = "block";
 
-  document.getElementById("rowsCV").textContent    = Object.keys(cv).length;
-  document.getElementById("rowsBO").textContent    = Object.keys(bo).length;
-  document.getElementById("rowsGAR").textContent   = Object.keys(gar).length;
-  document.getElementById("rowsGARBO").textContent = Object.keys(garbo).length;
+  // --- Derivar totales por especie:
+  //     prefer suma de COMM_* (si tenemos el detalle por comitente);
+  //     sino, caer de vuelta a RECON_* (totales del archivo) ---
+  const cvTotals = {}, boTotals = {};
+  if (Object.keys(cv).length) {
+    Object.keys(cv).forEach(function(esp) {
+      let s = 0;
+      Object.keys(cv[esp]).forEach(function(c) { s += cv[esp][c].qty; });
+      cvTotals[esp] = s;
+    });
+  } else {
+    Object.keys(cvTotalsRaw).forEach(function(esp) { cvTotals[esp] = cvTotalsRaw[esp].qty || 0; });
+  }
+  if (Object.keys(bo).length) {
+    Object.keys(bo).forEach(function(esp) {
+      let s = 0;
+      Object.keys(bo[esp]).forEach(function(c) { s += bo[esp][c].qty; });
+      boTotals[esp] = s;
+    });
+  } else {
+    Object.keys(boTotalsRaw).forEach(function(esp) { boTotals[esp] = boTotalsRaw[esp].qty || 0; });
+  }
 
-  const allCodes = new Set();
-  Object.keys(cv).forEach(function(k) { allCodes.add(k); });
-  Object.keys(bo).forEach(function(k) { allCodes.add(k); });
-  Object.keys(gar).forEach(function(k) { allCodes.add(k); });
-  Object.keys(garbo).forEach(function(k) { allCodes.add(k); });
+  // --- Conjunto de especies (incluye las que aparecen solo en GAR/GARBO) ---
+  const allEsp = new Set();
+  Object.keys(cvTotals).forEach(function(k) { allEsp.add(k); });
+  Object.keys(boTotals).forEach(function(k) { allEsp.add(k); });
+  Object.keys(gar).forEach(function(k) { allEsp.add(k); });
+  Object.keys(garbo).forEach(function(k) { allEsp.add(k); });
+
+  // --- Contar comitentes y posiciones SETTLE para el resumen ---
+  const cvComm = new Set(), boComm = new Set();
+  Object.keys(cv).forEach(function(esp) { Object.keys(cv[esp]).forEach(function(c) { cvComm.add(c); }); });
+  Object.keys(bo).forEach(function(esp) { Object.keys(bo[esp]).forEach(function(c) { boComm.add(c); }); });
+
+  let settlePosCV = 0;
+  const settleAcctsSeen = new Set();
+  let settleFondeoGar = 0, settleLiquidac = 0;
+  Object.keys(cv).forEach(function(esp) {
+    Object.keys(cv[esp]).forEach(function(c) {
+      if (cv[esp][c].isSettle || _isSettleAccount(c)) {
+        if (cv[esp][c].qty > 0.0001) settlePosCV++;
+        settleAcctsSeen.add(c);
+      }
+    });
+  });
+  Object.keys(bo).forEach(function(esp) {
+    Object.keys(bo[esp]).forEach(function(c) {
+      if (bo[esp][c].isSettle || _isSettleAccount(c)) settleAcctsSeen.add(c);
+    });
+  });
+  settleAcctsSeen.forEach(function(c) {
+    if (/^80011\/(22|55)/.test(c)) settleFondeoGar++;
+    else if (/^70011\//.test(c))   settleLiquidac++;
+  });
+
+  // --- Filtros + opciones ---
   const onlyDiff = (document.getElementById("reconOnlyDiff") || {}).checked;
+  const includeSettle = (document.getElementById("commIncludeSettle") || {}).checked;
   const search = ((document.getElementById("searchBoxRecon") || {}).value || "").trim().toUpperCase();
-
-  let okN = 0, explN = 0, descN = 0;
-  const rows = [];
   const haveBothGar = !!(RECON_GAR && RECON_GARBO);
-  allCodes.forEach(function(code) {
-    const cQ  = cv[code]    ? cv[code].qty    : 0;
-    const bQ  = bo[code]    ? bo[code].qty    : 0;
-    const gQ  = gar[code]   ? gar[code].qty   : 0;
-    const gbQ = garbo[code] ? garbo[code].qty : 0;
-    const ticker = (cv[code] && cv[code].ticker) || (bo[code] && bo[code].ticker) || (gar[code] && gar[code].ticker) || (garbo[code] && garbo[code].ticker) || "";
-    // Logica del usuario:
-    //   - diffMain = AUNE - Caja
-    //   - diffGar  = Clearing - GarAUNE  (solo si ambos archivos cargados)
-    //   - Si los dos deltas son iguales (en valor y signo) -> es UN solo problema
-    //     reflejado en ambas cuentas (probable error de garantia). Diff = 1 delta.
-    //   - Si los dos deltas son opuestos -> se cancelan (compensados).
-    //   - Otro caso -> diff = diffMain + diffGar (suma neta).
+  const fmt = function(n) { return (n||0).toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 4 }); };
+
+  // --- Procesar cada especie ---
+  let okN = 0, explN = 0, descN = 0;
+  const blocks = [];
+  Array.from(allEsp).sort().forEach(function(esp) {
+    const cQ  = cvTotals[esp] || 0;
+    const bQ  = boTotals[esp] || 0;
+    const gQ  = gar[esp]   ? gar[esp].qty   : 0;
+    const gbQ = garbo[esp] ? garbo[esp].qty : 0;
+    const ticker = (cvTotalsRaw[esp] && cvTotalsRaw[esp].ticker)
+                || (boTotalsRaw[esp] && boTotalsRaw[esp].ticker)
+                || (gar[esp]   && gar[esp].ticker)
+                || (garbo[esp] && garbo[esp].ticker)
+                || "";
+
+    // Logica de descalce (preserva la del modulo original):
+    //   diffMain = AUNE - Caja
+    //   diffGar  = Clearing - GarAUNE  (solo si ambos archivos opcionales cargados)
+    //   sameDelta -> probable error en garantias
+    //   cancelan -> compensado; sino, se suman
     const diffMain = bQ - cQ;
     const diffGar  = haveBothGar ? (gQ - gbQ) : 0;
     const sameDelta = haveBothGar && Math.abs(diffMain - diffGar) < 0.0001 && Math.abs(diffMain) > 0.0001;
     const diff = sameDelta ? diffMain : (diffMain + diffGar);
+
     let status, cls;
     if (Math.abs(diff) < 0.0001) {
       if (Math.abs(diffMain) < 0.0001 && Math.abs(diffGar) < 0.0001) {
         status = "OK"; cls = "ok"; okN++;
       } else {
-        status = "Compensado (cantidad y garantia)"; cls = "expl"; explN++;
+        status = "Compensado"; cls = "expl"; explN++;
       }
     } else if (sameDelta) {
       status = "Probable error en garantias"; cls = "expl"; explN++;
     } else if (haveBothGar && Math.abs(diffMain) < 0.0001 && Math.abs(diffGar) > 0.0001) {
       status = "Cobertura inconsistente"; cls = "expl"; explN++;
-    } else if (!cv[code] && !bo[code] && !gar[code] && !garbo[code]) {
-      status = "Sin datos"; cls = "solo"; descN++;
-    } else if ((!cv[code] || !bo[code]) && Math.abs(diff) > 0.0001) {
-      const where = cv[code] ? "CV" : (bo[code] ? "AUNE" : (gar[code] ? "Clearing" : "Gar.AUNE"));
-      status = "Solo en " + where; cls = "solo"; descN++;
+    } else if (!cvTotals[esp] && !boTotals[esp] && Math.abs(diff) > 0.0001) {
+      status = "Solo en Garantias"; cls = "solo"; descN++;
+    } else if ((!cvTotals[esp] || !boTotals[esp]) && Math.abs(diff) > 0.0001) {
+      status = "Solo en " + (cvTotals[esp] ? "CV" : "AUNE"); cls = "solo"; descN++;
     } else {
-      status = "Descalce sin explicar"; cls = "descalce"; descN++;
+      status = "Descalce"; cls = "descalce"; descN++;
     }
-    rows.push({ code: code, ticker: ticker, cQ: cQ, bQ: bQ, gQ: gQ, gbQ: gbQ, diff: diff, status: status, cls: cls });
+
+    // Detalle por comitente para esta especie
+    const cvByComm = cv[esp] || {};
+    const boByComm = bo[esp] || {};
+    const allComm = new Set();
+    Object.keys(cvByComm).forEach(function(c) { allComm.add(c); });
+    Object.keys(boByComm).forEach(function(c) { allComm.add(c); });
+
+    const rowsDet = [];
+    allComm.forEach(function(comm) {
+      const ccQ = cvByComm[comm] ? cvByComm[comm].qty : 0;
+      const cbQ = boByComm[comm] ? boByComm[comm].qty : 0;
+      const isSettle = (cvByComm[comm] && cvByComm[comm].isSettle) || (boByComm[comm] && boByComm[comm].isSettle) || _isSettleAccount(comm);
+      const cdiff = cbQ - ccQ;
+      rowsDet.push({ comm: comm, cQ: ccQ, bQ: cbQ, diff: cdiff, isSettle: isSettle });
+    });
+    rowsDet.sort(function(a, b) {
+      const aSP = a.isSettle && a.cQ > 0.0001 ? 0 : 1;
+      const bSP = b.isSettle && b.cQ > 0.0001 ? 0 : 1;
+      if (aSP !== bSP) return aSP - bSP;
+      const ad = Math.abs(a.diff) > 0.0001 ? 0 : 1;
+      const bd = Math.abs(b.diff) > 0.0001 ? 0 : 1;
+      if (ad !== bd) return ad - bd;
+      return Math.abs(b.diff) - Math.abs(a.diff);
+    });
+
+    const hasDiff = (cls !== "ok");
+    const moves = (hasDiff && rowsDet.length) ? _suggestMoves(rowsDet, includeSettle) : [];
+
+    blocks.push({
+      esp: esp, ticker: ticker,
+      cQ: cQ, bQ: bQ, gQ: gQ, gbQ: gbQ,
+      diff: diff, diffMain: diffMain, diffGar: diffGar,
+      status: status, cls: cls,
+      rows: rowsDet, moves: moves, hasDiff: hasDiff,
+      haveGarRow: !!(gar[esp] || garbo[esp])
+    });
   });
 
-  document.getElementById("reconOK").textContent       = okN;
-  document.getElementById("reconExpl").textContent     = explN;
-  document.getElementById("reconDescalce").textContent = descN;
+  // --- Update summary bar ---
+  const setText = function(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setText("reconTotalEsp", allEsp.size);
+  setText("reconTotalCV",  cvComm.size);
+  setText("reconTotalBO",  boComm.size);
+  setText("commSettleCount", settleAcctsSeen.size);
+  setText("reconOK", okN);
+  setText("reconExpl", explN);
+  setText("reconDescalce", descN);
 
-  const fmt = function(n) { return (n||0).toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 4 }); };
-  let visible = rows;
-  if (onlyDiff) visible = visible.filter(function(r) { return r.cls !== "ok"; });
-  if (search) visible = visible.filter(function(r) { return (r.code + " " + r.ticker).toUpperCase().indexOf(search) >= 0; });
-  visible.sort(function(a,b) {
+  // --- Inline SETTLE summary ---
+  const settleInline = document.getElementById("commSettleDetected");
+  if (settleInline) {
+    if (settleAcctsSeen.size === 0) {
+      settleInline.textContent = (cvComm.size + boComm.size > 0)
+        ? "(0 cuentas SETTLE detectadas en los archivos cargados)"
+        : "";
+      settleInline.style.color = "var(--warning)";
+    } else {
+      settleInline.textContent =
+        "(" + settleAcctsSeen.size + " cuentas SETTLE: " +
+        settleFondeoGar + " fondeo gar., " +
+        settleLiquidac + " liquidac.; " +
+        settlePosCV + " pos. en CV con saldo)";
+      settleInline.style.color = "var(--text-muted)";
+    }
+  }
+
+  // --- Filtros + ordenamiento de la lista ---
+  let visible = blocks;
+  if (onlyDiff) visible = visible.filter(function(b) { return b.cls !== "ok"; });
+  if (search) {
+    visible = visible.filter(function(b) {
+      if ((b.esp + " " + (b.ticker || "")).toUpperCase().indexOf(search) >= 0) return true;
+      return b.rows.some(function(r) { return r.comm.toUpperCase().indexOf(search) >= 0; });
+    });
+  }
+  visible.sort(function(a, b) {
     const ord = { descalce: 0, solo: 1, expl: 2, ok: 3 };
     if (ord[a.cls] !== ord[b.cls]) return ord[a.cls] - ord[b.cls];
     return Math.abs(b.diff) - Math.abs(a.diff);
   });
 
-  const STATUS_TOOLTIPS = {
-    "ok":       "Las cantidades y garantias matchean exactamente.",
-    "expl":     "Hay diferencia, pero se explica entre cantidad y garantias (compensado o garantia inconsistente).",
-    "descalce": "Diferencia que no se explica por garantia. Revisar.",
-    "solo":     "La especie aparece solamente en una de las fuentes."
-  };
-  const tbody = document.querySelector("#reconTable tbody");
-  if (tbody) tbody.innerHTML = visible.map(function(r) {
-    const tip = (STATUS_TOOLTIPS[r.cls] || "").replace(/"/g, '&quot;');
-    return "<tr>" +
-      "<td><code>" + r.code + "</code></td>" +
-      "<td>" + (r.ticker || "&mdash;") + "</td>" +
-      "<td class=\"num\">" + fmt(r.cQ) + "</td>" +
-      "<td class=\"num\">" + fmt(r.bQ) + "</td>" +
-      "<td class=\"num\">" + fmt(r.gQ) + "</td>" +
-      "<td class=\"num\">" + fmt(r.gbQ) + "</td>" +
-      "<td class=\"num\" style=\"font-weight:700;color:" + (Math.abs(r.diff)<0.0001?"#065F46":"#991B1B") + "\">" + fmt(r.diff) + "</td>" +
-      "<td><span class=\"recon-status " + r.cls + "\" title=\"" + tip + "\">" + r.status + "</span></td>" +
-      "</tr>";
-  }).join("");
+  // --- Render master/detail ---
+  const list = document.getElementById("reconUnifiedList");
   const cnt = document.getElementById("reconCount");
-  if (cnt) cnt.textContent = visible.length + " filas mostradas (de " + rows.length + " totales)";
+  if (cnt) cnt.textContent = visible.length + " especies mostradas (de " + blocks.length + " totales)";
+  if (!list) return;
+  if (!visible.length) {
+    list.innerHTML = "<div class='recon-row-empty'>" +
+      (haveAny ? "Nada para mostrar con los filtros actuales." : "Carga los archivos CV y AUNE por comitente para iniciar el cruce.") +
+      "</div>";
+    return;
+  }
 
-  renderCommRecon();
+  list.innerHTML = visible.map(function(b) {
+    const expanded = (b.hasDiff && b.cls === "descalce") ? " expanded" : "";
+    const diffPretty = (b.diff > 0 ? "+" : "") + fmt(b.diff);
+    const tickerHtml = b.ticker ? "<span class='ticker'>" + b.ticker + "</span>" : "";
+    const extraGarHtml = b.haveGarRow
+      ? "<span>Clearing: <b>" + fmt(b.gQ) + "</b></span><span>Gar.AUNE: <b>" + fmt(b.gbQ) + "</b></span>"
+      : "";
+
+    // Detalle: tabla de comitentes + sugerencias
+    let detailHtml;
+    if (!b.rows.length) {
+      detailHtml =
+        "<div class='recon-row-extra-totals'>" +
+        "<span>Esta especie aparece solo en Clearing/Gar.AUNE. Para ver detalle por comitente y generar transferencias, cargá los archivos CV/AUNE por comitente.</span>" +
+        "</div>";
+    } else {
+      const trsHtml = b.rows.map(function(r) {
+        let rcls = "";
+        if (r.isSettle && r.cQ > 0.0001) rcls = "settle";
+        else if (r.diff > 0.0001) rcls = "deficit";
+        else if (r.diff < -0.0001) rcls = "surplus";
+        const settleBadge = r.isSettle ? "<span class='badge-settle'>SETTLE</span>" : "";
+        const action = r.isSettle
+          ? (r.cQ > 0.0001 ? "Reasignar" : "&mdash;")
+          : (r.diff > 0.0001 ? "Recibir" : (r.diff < -0.0001 ? "Entregar" : "OK"));
+        return "<tr class='" + rcls + "'>" +
+          "<td>" + r.comm + settleBadge + "</td>" +
+          "<td class='num'>" + fmt(r.cQ) + "</td>" +
+          "<td class='num'>" + fmt(r.bQ) + "</td>" +
+          "<td class='num diff'>" + (r.diff > 0 ? "+" : "") + fmt(r.diff) + "</td>" +
+          "<td>" + action + "</td>" +
+          "</tr>";
+      }).join("");
+
+      const movesHtml = b.moves.length
+        ? ("<div class='move-suggestions'><b>Transferencias sugeridas (entrarán al SI.2):</b><br>" +
+          b.moves.map(function(m) {
+            return "&bull; Mover <span class='qty'>" + fmt(m.qty) + "</span> de <b>" + m.from + "</b>" +
+                   (m.fromSettle ? " <span class='badge-settle'>SETTLE</span>" : "") +
+                   " <span class='arrow'>&rarr;</span> <b>" + m.to + "</b>";
+          }).join("<br>") + "</div>")
+        : (b.hasDiff
+          ? "<div class='move-suggestions' style='background:#FEE2E2;border-color:#FECACA;border-left-color:#EF4444;'><b>No hay fuente disponible para cubrir este descalce.</b></div>"
+          : "");
+
+      detailHtml =
+        "<table><thead><tr>" +
+        "<th>Comitente</th><th class='num'>CV</th><th class='num'>AUNE</th><th class='num'>Diff</th><th>Acci&oacute;n</th>" +
+        "</tr></thead><tbody>" + trsHtml + "</tbody></table>" +
+        movesHtml;
+    }
+
+    return (
+      "<div class='recon-row" + expanded + "' data-esp='" + b.esp + "'>" +
+        "<div class='recon-row-header'>" +
+          "<div class='recon-row-toggle'>" +
+            "<span class='caret'>&#9656;</span>" +
+            "<code>" + b.esp + "</code>" +
+            tickerHtml +
+          "</div>" +
+          "<div class='recon-row-totals'>" +
+            "<span>CV: <b>" + fmt(b.cQ) + "</b></span>" +
+            "<span>AUNE: <b>" + fmt(b.bQ) + "</b></span>" +
+            extraGarHtml +
+            "<span class='recon-row-diff " + b.cls + "' title='" + b.status + "'>" + diffPretty + "</span>" +
+            "<span class='recon-status " + b.cls + "'>" + b.status + "</span>" +
+          "</div>" +
+        "</div>" +
+        "<div class='recon-row-body'><div class='recon-row-body-inner'>" + detailHtml + "</div></div>" +
+      "</div>"
+    );
+  }).join("");
+
+  // Click handlers para expandir/colapsar
+  list.querySelectorAll(".recon-row-header").forEach(function(h) {
+    h.addEventListener("click", function() {
+      const row = h.parentElement;
+      if (row) row.classList.toggle("expanded");
+    });
+  });
 }
+
+// Compat: renderCommRecon ahora delega en la vista unificada
+function renderCommRecon() { try { renderRecon(); } catch(e) {} }
 
 function setupReconDropzones() {
   const slots = [
@@ -3699,22 +4033,61 @@ function setupReconDropzones() {
       inp.value = "";
     });
   });
+
+  // Filtros y busqueda
   const sb = document.getElementById("searchBoxRecon");
   if (sb) sb.addEventListener("input", function() { renderRecon(); });
   const od = document.getElementById("reconOnlyDiff");
   if (od) od.addEventListener("change", function() { renderRecon(); });
+  const is = document.getElementById("commIncludeSettle");
+  if (is) is.addEventListener("change", function() { renderRecon(); });
+
+  // Boton "Generar archivo SI2"
+  const btnSI2 = document.getElementById("btnGenSI2");
+  if (btnSI2) btnSI2.addEventListener("click", function() {
+    try { generateSI2(); } catch(e) { notify("<b>Error generando SI2:</b> " + e.message, "error"); }
+  });
+
+  // Export CSV: dump del cruce unificado (especie + totales + estado + detalle por comitente)
   const ex = document.getElementById("exportBtnRecon");
   if (ex) ex.addEventListener("click", function() {
-    const t = document.getElementById("reconTable");
-    if (!t) return;
-    const rows = Array.from(t.querySelectorAll("tr"));
-    const csv = rows.map(function(tr) {
-      return Array.from(tr.querySelectorAll("th,td")).map(function(c) {
-        const txt = (c.innerText || "").replace(/\r?\n/g, " ").replace(/"/g, '""');
-        return /[",;\n]/.test(txt) ? '"' + txt + '"' : txt;
-      }).join(";");
-    }).join("\n");
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    const cv = COMM_CV || {}, bo = COMM_BO || {};
+    const cvRaw = RECON_CV || {}, boRaw = RECON_BO || {};
+    const gar = RECON_GAR || {}, garbo = RECON_GARBO || {};
+    const allEsp = new Set();
+    [cv, bo, cvRaw, boRaw, gar, garbo].forEach(function(o) { Object.keys(o).forEach(function(k) { allEsp.add(k); }); });
+    const haveBothGar = !!(RECON_GAR && RECON_GARBO);
+
+    const lines = [];
+    lines.push(["Especie","Ticker","Comitente","CV","AUNE","Clearing","Gar.AUNE","Diff","SETTLE","Nivel"].join(";"));
+    Array.from(allEsp).sort().forEach(function(esp) {
+      const ticker = (cvRaw[esp] && cvRaw[esp].ticker) || (boRaw[esp] && boRaw[esp].ticker) || (gar[esp] && gar[esp].ticker) || (garbo[esp] && garbo[esp].ticker) || "";
+      // Totales
+      let cQtot = 0, bQtot = 0;
+      if (cv[esp]) Object.keys(cv[esp]).forEach(function(c) { cQtot += cv[esp][c].qty; });
+      else if (cvRaw[esp]) cQtot = cvRaw[esp].qty || 0;
+      if (bo[esp]) Object.keys(bo[esp]).forEach(function(c) { bQtot += bo[esp][c].qty; });
+      else if (boRaw[esp]) bQtot = boRaw[esp].qty || 0;
+      const gQ = gar[esp] ? gar[esp].qty : 0;
+      const gbQ = garbo[esp] ? garbo[esp].qty : 0;
+      const diffMain = bQtot - cQtot;
+      const diffGar  = haveBothGar ? (gQ - gbQ) : 0;
+      const sameDelta = haveBothGar && Math.abs(diffMain - diffGar) < 0.0001 && Math.abs(diffMain) > 0.0001;
+      const diff = sameDelta ? diffMain : (diffMain + diffGar);
+      lines.push([esp, ticker, "TOTAL", cQtot, bQtot, gQ, gbQ, diff, "", "Total"].join(";"));
+      // Detalle por comitente
+      const cvByComm = cv[esp] || {}, boByComm = bo[esp] || {};
+      const allComm = new Set();
+      Object.keys(cvByComm).forEach(function(c) { allComm.add(c); });
+      Object.keys(boByComm).forEach(function(c) { allComm.add(c); });
+      Array.from(allComm).sort().forEach(function(comm) {
+        const ccQ = cvByComm[comm] ? cvByComm[comm].qty : 0;
+        const cbQ = boByComm[comm] ? boByComm[comm].qty : 0;
+        const isS = (cvByComm[comm] && cvByComm[comm].isSettle) || (boByComm[comm] && boByComm[comm].isSettle) || _isSettleAccount(comm);
+        lines.push([esp, ticker, comm, ccQ, cbQ, "", "", cbQ-ccQ, isS?"SI":"", "Comitente"].join(";"));
+      });
+    });
+    const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = "Conciliacion_Titulos_" + new Date().toISOString().slice(0,10) + ".csv";
@@ -3735,13 +4108,43 @@ function setupReconDropzones() {
 let COMM_CV = null;
 let COMM_BO = null;
 
+// Cuentas SETTLE de BYMA:
+//   - 70011/10000  y 70011/50000  -> liquidaciones
+//   - 80011/2222...               -> fondeo garantias (varias subcuentas posibles)
+//   - 80011/5555...               -> fondeo garantias (varias subcuentas posibles)
+// Estas cuentas son SIEMPRE fuentes (emisoras) en el SI.2 y nunca destino.
 const SETTLE_ACCOUNTS = ["70011/10000","80011/222222","80011/55555","70011/50000"];
+
+// Quita brackets, prefijo de operador "11/" y descripcion al final.
+// "[80011/55555] FONDEO"           -> "80011/55555"
+// "11/80011/55555 - FONDEO"        -> "80011/55555"
+// "70011/10000 LIQUIDACIONES"      -> "70011/10000"
+// "11/170030"                      -> "11/170030"  (NO toca comitentes normales)
+function _stripSettleNoise(raw) {
+  let c = String(raw == null ? "" : raw).trim();
+  if (!c) return "";
+  // 1) Brackets: "[xxx] Descripcion" -> "xxx"
+  const mb = c.match(/^\[([^\]]+)\]/);
+  if (mb) c = mb[1].trim();
+  // 2) Prefijo de operador "11/" SOLO si lo que sigue es un patron SETTLE
+  if (/^11\/(70011|80011)\//.test(c)) c = c.slice(3);
+  // 3) Cortar descripcion al final: dejar solo "NNNNN/NNNNN..."
+  const mm = c.match(/^(\d+\/\d+)/);
+  if (mm) c = mm[1];
+  return c;
+}
+
 function _isSettleAccount(comm) {
-  const c = String(comm || "").trim();
-  if (!c) return false;
-  if (SETTLE_ACCOUNTS.indexOf(c) >= 0) return true;
-  if (c.startsWith("80011/22") || c.startsWith("80011/55")) return true;
-  if (c.startsWith("70011/")) return true;
+  const raw = String(comm == null ? "" : comm).trim();
+  if (!raw) return false;
+  // Probar con la cadena tal cual y con la version "limpia"
+  const candidates = [raw, _stripSettleNoise(raw)];
+  for (const c of candidates) {
+    if (!c) continue;
+    if (SETTLE_ACCOUNTS.indexOf(c) >= 0) return true;
+    if (/^80011\/(22|55)/.test(c)) return true;
+    if (/^70011\//.test(c)) return true;
+  }
   return false;
 }
 function _normComitenteCV(raw) {
@@ -3752,15 +4155,19 @@ function _normComitenteCV(raw) {
 }
 
 // Normalizacion universal de comitente: extrae solo el numero
-// Soporta:  "11/170030" (CV)  ->  "170030"
-//           "[170030] Casares, Esteban" (AUNE)  ->  "170030"
-//           "170030" (plano)  ->  "170030"
-//           "70011/10000" (settle)  ->  se mantiene completo para detectar
+// Soporta:  "11/170030" (CV)            -> "170030"
+//           "[170030] Casares, Esteban" -> "170030"
+//           "170030" (plano)            -> "170030"
+//           "70011/10000" (settle)      -> "70011/10000" (preserva)
+//           "[80011/55555] FONDEO"      -> "80011/55555" (preserva canonico)
+//           "11/80011/55555"            -> "80011/55555" (saca prefijo operador)
 function _normComitenteUniversal(raw) {
   const s = String(raw == null ? "" : raw).trim();
   if (!s) return "";
-  // Settle accounts: mantener formato completo para deteccion
-  if (_isSettleAccount(s)) return s;
+  // Settle accounts: devolver formato canonico "NNNNN/NNNNN" sin ruido alrededor.
+  // Importante: se hace ANTES del strip "11/" generico para evitar que cuentas
+  // como "11/80011/55555" se conviertan en "80011" (perdiendo el SETTLE).
+  if (_isSettleAccount(s)) return _stripSettleNoise(s);
   // AUNE: "[10021] Name" -> "10021"
   let m = s.match(/^\[(\d+)\]/);
   if (m) return m[1];
@@ -3861,114 +4268,8 @@ function _suggestMoves(rows, includeSettle) {
   return moves;
 }
 
-function renderCommRecon() {
-  const cv = COMM_CV || {}, bo = COMM_BO || {};
-  const haveAny = COMM_CV || COMM_BO;
-  if (!haveAny) {
-    const list = document.getElementById("commEspeciesList");
-    if (list) list.innerHTML = "<div style=\"padding:18px;text-align:center;color:var(--text-muted);font-size:12px;border:1px dashed var(--border);border-radius:8px;\">Carga los archivos por comitente (CV y AUNE) para ver el cruce por comitente.</div>";
-    const ids = ["commTotalEspecies","commTotalCV","commTotalBO","commOKN","commDescalceN"];
-    ids.forEach(function(id) { const el = document.getElementById(id); if (el) el.textContent = 0; });
-    return;
-  }
-
-  const allEsp = new Set();
-  Object.keys(cv).forEach(function(k) { allEsp.add(k); });
-  Object.keys(bo).forEach(function(k) { allEsp.add(k); });
-  document.getElementById("commTotalEspecies").textContent = allEsp.size;
-
-  const cvComitentes = new Set(), boComitentes = new Set();
-  Object.keys(cv).forEach(function(esp) { Object.keys(cv[esp]).forEach(function(c) { cvComitentes.add(c); }); });
-  Object.keys(bo).forEach(function(esp) { Object.keys(bo[esp]).forEach(function(c) { boComitentes.add(c); }); });
-  document.getElementById("commTotalCV").textContent = cvComitentes.size;
-  document.getElementById("commTotalBO").textContent = boComitentes.size;
-
-  const onlyDiff = (document.getElementById("commOnlyDiff") || {}).checked;
-  const includeSettle = (document.getElementById("commIncludeSettle") || {}).checked;
-  const search = ((document.getElementById("searchBoxComm") || {}).value || "").trim().toUpperCase();
-  const fmt = function(n) { return (n||0).toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 4 }); };
-
-  let okN = 0, descN = 0;
-  const blocks = [];
-  Array.from(allEsp).sort().forEach(function(esp) {
-    const cvByComm = cv[esp] || {};
-    const boByComm = bo[esp] || {};
-    const allComm = new Set();
-    Object.keys(cvByComm).forEach(function(c) { allComm.add(c); });
-    Object.keys(boByComm).forEach(function(c) { allComm.add(c); });
-    const rows = [];
-    let totalCV = 0, totalBO = 0, hasDiff = false;
-    allComm.forEach(function(comm) {
-      const cQ = cvByComm[comm] ? cvByComm[comm].qty : 0;
-      const bQ = boByComm[comm] ? boByComm[comm].qty : 0;
-      const isSettle = (cvByComm[comm] && cvByComm[comm].isSettle) || (boByComm[comm] && boByComm[comm].isSettle) || _isSettleAccount(comm);
-      const diff = bQ - cQ;
-      const isProblem = isSettle ? (cQ > 0.0001) : (Math.abs(diff) > 0.0001);
-      if (isProblem) hasDiff = true;
-      totalCV += cQ; totalBO += bQ;
-      rows.push({ comm: comm, cQ: cQ, bQ: bQ, diff: diff, isSettle: isSettle });
-    });
-    if (hasDiff) descN++; else okN++;
-    if (onlyDiff && !hasDiff) return;
-    if (search) {
-      const matches = (esp.toUpperCase().indexOf(search) >= 0) || rows.some(function(r) { return r.comm.toUpperCase().indexOf(search) >= 0; });
-      if (!matches) return;
-    }
-    rows.sort(function(a,b) {
-      const aSP = a.isSettle && a.cQ > 0.0001 ? 0 : 1;
-      const bSP = b.isSettle && b.cQ > 0.0001 ? 0 : 1;
-      if (aSP !== bSP) return aSP - bSP;
-      const ad = Math.abs(a.diff) > 0.0001 ? 0 : 1;
-      const bd = Math.abs(b.diff) > 0.0001 ? 0 : 1;
-      if (ad !== bd) return ad - bd;
-      return Math.abs(b.diff) - Math.abs(a.diff);
-    });
-    const moves = hasDiff ? _suggestMoves(rows, includeSettle) : [];
-    blocks.push({ esp: esp, rows: rows, totalCV: totalCV, totalBO: totalBO, totalDiff: totalBO - totalCV, hasDiff: hasDiff, moves: moves });
-  });
-
-  document.getElementById("commOKN").textContent = okN;
-  document.getElementById("commDescalceN").textContent = descN;
-
-  const list = document.getElementById("commEspeciesList");
-  if (!blocks.length) {
-    list.innerHTML = "<div style=\"padding:18px;text-align:center;color:var(--text-muted);font-size:12px;border:1px dashed var(--border);border-radius:8px;\">No hay especies para mostrar con los filtros actuales.</div>";
-    return;
-  }
-  list.innerHTML = blocks.map(function(b) {
-    const trsHtml = b.rows.map(function(r) {
-      let cls = "";
-      if (r.isSettle && r.cQ > 0.0001) cls = "settle";
-      else if (r.diff > 0.0001) cls = "deficit";
-      else if (r.diff < -0.0001) cls = "surplus";
-      const settleBadge = r.isSettle ? "<span class=\"badge-settle\">SETTLE</span>" : "";
-      const action = r.isSettle ? (r.cQ > 0.0001 ? "Reasignar" : "&mdash;")
-                : (r.diff > 0.0001 ? "Recibir" : (r.diff < -0.0001 ? "Entregar" : "OK"));
-      return "<tr class=\"" + cls + "\">" +
-        "<td>" + r.comm + settleBadge + "</td>" +
-        "<td class=\"num\">" + fmt(r.cQ) + "</td>" +
-        "<td class=\"num\">" + fmt(r.bQ) + "</td>" +
-        "<td class=\"num diff\">" + (r.diff > 0 ? "+" : "") + fmt(r.diff) + "</td>" +
-        "<td>" + action + "</td>" +
-        "</tr>";
-    }).join("");
-    const movesHtml = b.moves.length ? (
-      "<div class=\"move-suggestions\"><b>Sugerencias de movimiento:</b><br>" +
-      b.moves.map(function(m) {
-        return "&bull; Mover <span class=\"qty\">" + fmt(m.qty) + "</span> de <b>" + m.from + "</b>" +
-               (m.fromSettle ? " <span class=\"badge-settle\">SETTLE</span>" : "") +
-               " <span class=\"arrow\">&rarr;</span> <b>" + m.to + "</b>";
-      }).join("<br>") +
-      "</div>"
-    ) : (b.hasDiff ? "<div class=\"move-suggestions\" style=\"background:#FEE2E2;border-color:#FECACA;border-left-color:#EF4444;\"><b>No hay fuente posible para cubrir el descalce.</b></div>" : "");
-    return "<div class=\"especie-block\">" +
-      "<div class=\"especie-head\"><div class=\"especie-name\"><code>" + b.esp + "</code></div>" +
-      "<div class=\"especie-totals\"><span>Total CV: <b>" + fmt(b.totalCV) + "</b></span> &middot; <span>Total AUNE: <b>" + fmt(b.totalBO) + "</b></span> &middot; <span>Neto: <b>" + (b.totalDiff > 0 ? "+" : "") + fmt(b.totalDiff) + "</b></span></div></div>" +
-      "<table><thead><tr><th>Comitente</th><th class=\"num\">Caja Valores</th><th class=\"num\">AUNE</th><th class=\"num\">Diferencia</th><th>Accion</th></tr></thead><tbody>" + trsHtml + "</tbody></table>" +
-      movesHtml +
-      "</div>";
-  }).join("");
-}
+// (renderCommRecon legacy eliminado — la vista unificada en renderRecon
+//  reemplaza por completo el master/detail de comitentes.)
 
 /* =========================================================================
    GENERACION DE ARCHIVO SI2 - Settlement Instructions BYMA
@@ -4029,10 +4330,31 @@ function generateSI2() {
     "TradeDate","IntendedSettlementDate","PaymentType"
   ];
 
+  // Para que BYMA acepte la transferencia, el InstructionReference debe ser unico
+  // (no determinista). Si genero el SI2 varias veces, los refs no deben repetirse.
+  // Formato: H + timestamp (ms) + 5 digitos random + indice (para evitar colision en el mismo lote)
+  const baseTs = Date.now().toString().slice(-9); // ultimos 9 digitos del timestamp
+  const usedRefs = new Set();
+  function _randomRef(idx) {
+    let ref;
+    let safety = 0;
+    do {
+      const rnd = Math.floor(Math.random() * 1e5).toString().padStart(5, "0");
+      ref = "H" + baseTs + rnd;
+      safety++;
+    } while (usedRefs.has(ref) && safety < 20);
+    usedRefs.add(ref);
+    return ref;
+  }
+
   const lines = [headers.join(";")];
+  // Contadores para informe al usuario
+  let cntSettleSrc = 0;       // emisoras desde SETTLE (fondeo garantias / liquidaciones)
+  let cntFondeoGar = 0;       // 80011/22 + 80011/55
+  let cntLiquidac  = 0;       // 70011/...
+  let cntPeerToPeer = 0;      // comitente -> comitente
   allMoves.forEach(function(m, idx) {
-    const seq = String(idx + 1).padStart(6, "0");
-    const ref = "H" + yyyymmdd + seq;
+    const ref = _randomRef(idx);
     const fromAcc = _formatSI2Account(m.from);
     const toAcc = _formatSI2Account(m.to);
     const qty = (Math.abs(m.qty)).toFixed(7);
@@ -4042,6 +4364,13 @@ function generateSI2() {
       "DELIVER", qty, "", "TRAD", "RTGS",
       yyyymmdd, yyyymmdd, "NOTHING"
     ].join(";"));
+    if (m.fromSettle) {
+      cntSettleSrc++;
+      if (/^80011\/(22|55)/.test(m.from)) cntFondeoGar++;
+      else if (/^70011\//.test(m.from))   cntLiquidac++;
+    } else {
+      cntPeerToPeer++;
+    }
   });
 
   // Mismo formato del original: CRLF al final de cada linea
@@ -4052,75 +4381,24 @@ function generateSI2() {
   a.download = "SI2_conciliacion_" + yyyymmdd + ".si2";
   document.body.appendChild(a); a.click();
   setTimeout(function() { try { URL.revokeObjectURL(a.href); a.remove(); } catch(e){} }, 100);
-  notify("<b>SI2 generado:</b> " + allMoves.length + " transferencias en SI2_conciliacion_" + yyyymmdd + ".si2", "success");
+  // Mensaje con breakdown: total + emisoras desde SETTLE + entre comitentes
+  const breakdown =
+    "<br><small>" +
+    "&bull; " + cntSettleSrc + " emisoras desde SETTLE" +
+    (cntSettleSrc > 0 ? " (" + cntFondeoGar + " fondeo garantias 80011/22-55, " + cntLiquidac + " liquidaciones 70011)" : "") +
+    "<br>&bull; " + cntPeerToPeer + " entre comitentes" +
+    "</small>";
+  notify(
+    "<b>SI2 generado:</b> " + allMoves.length + " transferencias en SI2_conciliacion_" + yyyymmdd + ".si2" + breakdown,
+    "success",
+    6500
+  );
 }
 
-function setupCommReconDropzones() {
-  const slots = [
-    { dzId: "dropzoneCommCV", inpId: "fileInputCommCV", kind: "CV" },
-    { dzId: "dropzoneCommBO", inpId: "fileInputCommBO", kind: "BO" }
-  ];
-  slots.forEach(function(s) {
-    const dz  = document.getElementById(s.dzId);
-    const inp = document.getElementById(s.inpId);
-    if (!dz || !inp) return;
-    dz.addEventListener("click", function(e) { if (e.target === inp) return; inp.click(); });
-    dz.addEventListener("keydown", function(e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inp.click(); } });
-    dz.addEventListener("dragover",  function(e) { e.preventDefault(); dz.classList.add("dragover"); });
-    dz.addEventListener("dragleave", function() { dz.classList.remove("dragover"); });
-    dz.addEventListener("drop", async function(e) {
-      e.preventDefault();
-      dz.classList.remove("dragover");
-      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-      if (!f) return;
-      await loadCommFile(f, s.kind);
-      flashReplaced(dz);
-    });
-    inp.addEventListener("change", async function(e) {
-      const f = e.target.files && e.target.files[0];
-      if (!f) return;
-      await loadCommFile(f, s.kind);
-      flashReplaced(dz);
-      inp.value = "";
-    });
-  });
-  const sb = document.getElementById("searchBoxComm");
-  if (sb) sb.addEventListener("input", function() { renderCommRecon(); });
-  ["commOnlyDiff","commIncludeSettle"].forEach(function(id) {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener("change", function() { renderCommRecon(); });
-  });
-  const ex = document.getElementById("exportBtnComm");
-  if (ex) ex.addEventListener("click", function() {
-    const cv = COMM_CV || {}, bo = COMM_BO || {};
-    const allEsp = new Set();
-    Object.keys(cv).forEach(function(k) { allEsp.add(k); });
-    Object.keys(bo).forEach(function(k) { allEsp.add(k); });
-    const lines = [["Especie","Comitente","CajaValores","AUNE","Diferencia","SETTLE"].join(";")];
-    Array.from(allEsp).sort().forEach(function(esp) {
-      const cvByComm = cv[esp] || {}, boByComm = bo[esp] || {};
-      const allComm = new Set();
-      Object.keys(cvByComm).forEach(function(c) { allComm.add(c); });
-      Object.keys(boByComm).forEach(function(c) { allComm.add(c); });
-      Array.from(allComm).sort().forEach(function(comm) {
-        const cQ = cvByComm[comm] ? cvByComm[comm].qty : 0;
-        const bQ = boByComm[comm] ? boByComm[comm].qty : 0;
-        const isS = (cvByComm[comm] && cvByComm[comm].isSettle) || (boByComm[comm] && boByComm[comm].isSettle) || _isSettleAccount(comm);
-        lines.push([esp, comm, cQ, bQ, bQ-cQ, isS?"SI":""].join(";"));
-      });
-    });
-    const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "Conciliacion_Comitente_" + new Date().toISOString().slice(0,10) + ".csv";
-    document.body.appendChild(a); a.click();
-    setTimeout(function() { URL.revokeObjectURL(a.href); a.remove(); }, 100);
-  });
-  const btnSI2 = document.getElementById("btnGenSI2");
-  if (btnSI2) btnSI2.addEventListener("click", function() {
-    try { generateSI2(); } catch(e) { notify("<b>Error generando SI2:</b> " + e.message, "error"); }
-  });
-}
+// Stub: la conciliacion por comitente fue absorbida por la unificada (setupReconDropzones).
+// Los archivos CV/AUNE traen su columna de Comitente, asi que ingestReconFile popula
+// COMM_CV / COMM_BO directamente. No hay mas dropzones separados que cablear.
+function setupCommReconDropzones() { /* no-op */ }
 
 /* =========================================================================
    AV vs AUNE: conciliacion contra broker exterior
@@ -4448,6 +4726,13 @@ function renderAvAune() {
     return { m: m, status: status, cls: cls, scoreCls: scoreCls };
   });
   const orphBo = matched.orphanAune;
+  // Sumar los huerfanos AUNE como filas de descalce en la tabla principal (sin contra-parte AV)
+  orphBo.forEach(function(o) {
+    rows.push({
+      m: { av: { instrument: "", isin: "", position: 0, tokens: [] }, aune: o, score: 0, posMatch: false, isAuneOrphan: true },
+      status: "Solo en AUNE", cls: "solo", scoreCls: "s-none"
+    });
+  });
 
   document.getElementById("avOK").textContent = okN;
   document.getElementById("avDesc").textContent = descN;
@@ -4457,28 +4742,48 @@ function renderAvAune() {
   let visible = rows;
   if (onlyDiff) visible = visible.filter(function(r) { return r.cls !== "ok"; });
   if (search) visible = visible.filter(function(r) {
-    const s = (r.m.av.instrument + " " + (r.m.av.isin||"") + " " + (r.m.aune ? r.m.aune.desc + " " + r.m.aune.ticker + " " + r.m.aune.code : "")).toUpperCase();
+    const s = ((r.m.av && r.m.av.instrument || "") + " " + (r.m.av && r.m.av.isin || "") + " " + (r.m.aune ? r.m.aune.desc + " " + r.m.aune.ticker + " " + r.m.aune.code : "")).toUpperCase();
     return s.indexOf(search) >= 0;
   });
   visible.sort(function(a,b) {
     const ord = { descalce: 0, solo: 1, ok: 2 };
     if (ord[a.cls] !== ord[b.cls]) return ord[a.cls] - ord[b.cls];
-    return b.m.av.position - a.m.av.position;
+    const aPos = a.m.isAuneOrphan ? (a.m.aune ? a.m.aune.position : 0) : (a.m.av ? a.m.av.position : 0);
+    const bPos = b.m.isAuneOrphan ? (b.m.aune ? b.m.aune.position : 0) : (b.m.av ? b.m.av.position : 0);
+    return bPos - aPos;
   });
 
   const tbody = document.querySelector("#avAuneTable tbody");
   if (tbody) tbody.innerHTML = visible.map(function(r) {
     const m = r.m;
-    const avCell = "<b>" + (m.av.instrument||"") + "</b>" + (m.av.isin ? "<small><code>" + m.av.isin + "</code></small>" : "");
-    const auneCell = m.aune ? ("<b>[" + m.aune.code + "] " + (m.aune.ticker||"") + "</b><small>" + (m.aune.desc||"") + "</small>") : "<i style=\"color:var(--text-muted);\">&mdash; sin match &mdash;</i>";
+    const isAvOrphan = !m.aune && !m.isAuneOrphan;
+    const isAuOrphan = !!m.isAuneOrphan;
+    const avCell = isAuOrphan
+      ? "<i style=\"color:var(--text-muted);\">&mdash; sin match &mdash;</i>"
+      : ("<b>" + ((m.av && m.av.instrument) || "") + "</b>" + (m.av && m.av.isin ? "<small><code>" + m.av.isin + "</code></small>" : ""));
+    const avPos = isAuOrphan ? "&mdash;" : fmt((m.av && m.av.position) || 0);
+    const auneCell = m.aune
+      ? ("<b>[" + m.aune.code + "] " + (m.aune.ticker||"") + "</b><small>" + (m.aune.desc||"") + "</small>")
+      : "<i style=\"color:var(--text-muted);\">&mdash; sin match &mdash;</i>";
     const auPos = m.aune ? fmt(m.aune.position) : "&mdash;";
-    const diff = m.aune ? (m.av.position - m.aune.position) : null;
-    const diffStr = diff === null ? "&mdash;" : ((diff > 0 ? "+" : "") + fmt(diff));
-    const diffColor = (diff === null || Math.abs(diff) < 0.01) ? "#065F46" : "#991B1B";
-    const scoreLabel = !m.aune ? "&mdash;" : (m.score >= 1.0 ? "Alto" : m.score >= 0.5 ? "Medio" : "Bajo");
+    let diffStr, diffColor;
+    if (isAuOrphan) {
+      diffStr = "-" + fmt(m.aune.position);
+      diffColor = "#991B1B";
+    } else if (isAvOrphan) {
+      diffStr = "+" + fmt(m.av.position);
+      diffColor = "#991B1B";
+    } else if (m.aune) {
+      const diff = m.av.position - m.aune.position;
+      diffStr = (diff > 0 ? "+" : "") + fmt(diff);
+      diffColor = Math.abs(diff) < 0.01 ? "#065F46" : "#991B1B";
+    } else {
+      diffStr = "&mdash;"; diffColor = "#065F46";
+    }
+    const scoreLabel = (!m.aune || isAuOrphan || isAvOrphan) ? "&mdash;" : (m.score >= 1.0 ? "Alto" : m.score >= 0.5 ? "Medio" : "Bajo");
     return "<tr>" +
       "<td>" + avCell + "</td>" +
-      "<td class=\"num\">" + fmt(m.av.position) + "</td>" +
+      "<td class=\"num\">" + avPos + "</td>" +
       "<td>" + auneCell + "</td>" +
       "<td class=\"num\">" + auPos + "</td>" +
       "<td class=\"num\" style=\"font-weight:700;color:" + diffColor + "\">" + diffStr + "</td>" +
@@ -4628,20 +4933,22 @@ function bootstrap() {
   setupAvAuneDropzones();
   setupViewTabs();
 
-  // Boton "Limpiar Conciliacion" - resetea todos los archivos cargados de la pestana
+  // Boton "Limpiar" - resetea todos los archivos cargados en la pestana de conciliacion
   const btnResetRecon = document.getElementById("btnResetRecon");
   if (btnResetRecon) btnResetRecon.addEventListener("click", function() {
-    if (!confirm("Esta seguro? Se limpiaran TODOS los archivos cargados en Conciliacion (CV, AUNE, Clearing, Gar.AUNE, comitente).")) return;
+    if (!confirm("Esta seguro? Se limpiaran TODOS los archivos cargados en Conciliacion (CV, AUNE, Clearing, Gar.AUNE).")) return;
     RECON_CV = null; RECON_BO = null; RECON_GAR = null; RECON_GARBO = null;
     COMM_CV = null; COMM_BO = null;
-    ["dropzoneCV","dropzoneBO","dropzoneGAR","dropzoneGARBO","dropzoneCommCV","dropzoneCommBO"].forEach(function(id) {
+    ["dropzoneCV","dropzoneBO","dropzoneGAR","dropzoneGARBO"].forEach(function(id) {
       const el = document.getElementById(id);
       if (el) el.classList.remove("loaded");
     });
-    [["fileNameCV","Sin cargar"],["fileNameBO","Sin cargar"],["fileNameGAR","Sin cargar"],["fileNameGARBO","Sin cargar"],["fileNameCommCV","Sin cargar"],["fileNameCommBO","Sin cargar"]].forEach(function(pair) {
+    [["fileNameCV","Sin cargar"],["fileNameBO","Sin cargar"],["fileNameGAR","Sin cargar"],["fileNameGARBO","Sin cargar"]].forEach(function(pair) {
       const el = document.getElementById(pair[0]);
       if (el) el.textContent = pair[1];
     });
+    const list = document.getElementById("reconUnifiedList");
+    if (list) list.innerHTML = "";
     try { renderRecon(); } catch(e){}
     notify("<b>Conciliacion limpia.</b> Pod&eacute;s cargar archivos de cero.", "info");
   });
