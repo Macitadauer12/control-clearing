@@ -1930,10 +1930,12 @@ table tr:last-child td { border-bottom:none; }
       <div class="recon-actions">
         <label class="recon-toggle" style="display:inline-flex;"><input type="checkbox" id="reconOnlyDiff" checked> Solo descalces</label>
         <label class="recon-toggle" style="display:inline-flex;" title="Incluye en el SI.2 las transferencias EMISORAS desde 80011/22.., 80011/55.. (fondeo garantias) y 70011/10000, 70011/50000 (liquidaciones) hacia comitentes."><input type="checkbox" id="commIncludeSettle" checked> Usar SETTLE como emisoras</label>
+        <label class="recon-toggle" style="display:inline-flex;" title="Excluye los FCI / Fondos Comunes de Inversion del cruce y del SI.2. Detecta por la descripcion de AUNE (palabras FONDO, FCI, F.C.I., FUND, COMUN)."><input type="checkbox" id="excludeFunds" checked> Excluir fondos (FCI)</label>
         <input type="text" id="searchBoxRecon" placeholder="Buscar especie o comitente..." style="padding:7px 11px; border:1px solid var(--border); border-radius:6px; font-size:12px; min-width:240px;">
         <span style="flex:1"></span>
         <button class="btn export" id="exportBtnRecon" title="Exporta el cruce general por especie a CSV">Exportar CSV</button>
         <button class="btn" id="btnGenSI2" title="Genera el archivo .si2 con las transferencias sugeridas para subir a BYMA. Incluye emisoras desde cuentas SETTLE hacia comitentes.">Generar archivo SI2</button>
+        <span id="si2Status" style="font-size:11px; color:var(--text-muted); font-family:var(--font-mono); padding:6px 10px; border-radius:5px; background:var(--bg-alt); white-space:nowrap;"></span>
         <button type="button" class="btn-reset-recon" id="btnResetRecon" title="Limpia todos los archivos cargados de Conciliaci&oacute;n">&times; Limpiar</button>
       </div>
 
@@ -1943,6 +1945,7 @@ table tr:last-child td { border-bottom:none; }
         <div class="item"><span class="label">Comitentes en CV</span><span class="value" id="reconTotalCV">0</span></div>
         <div class="item"><span class="label">Comitentes en AUNE</span><span class="value" id="reconTotalBO">0</span></div>
         <div class="item" title="Posiciones detectadas en cuentas SETTLE (80011/22.., 80011/55.., 70011/...) sumando CV + AUNE. Se usan como emisoras en el SI.2."><span class="label">Posiciones SETTLE</span><span class="value" id="commSettleCount">0</span></div>
+        <div class="item" title="Cantidad de especies clasificadas como FCI / Fondos Comunes de Inversion, detectadas por la descripcion de AUNE. Excluidas si el toggle 'Excluir fondos' esta activo."><span class="label">Fondos (FCI)</span><span class="value" id="fundsCount">0</span></div>
         <div class="item"><span class="label">OK</span><span class="value success" id="reconOK">0</span></div>
         <div class="item"><span class="label">Explicadas</span><span class="value" id="reconExpl">0</span></div>
         <div class="item"><span class="label">Descalces</span><span class="value danger" id="reconDescalce">0</span></div>
@@ -3674,26 +3677,69 @@ function ingestReconFile(matrix, kind, fileName) {
   const dzMap    = { CV: "dropzoneCV", BO: "dropzoneBO", GAR: "dropzoneGAR", GARBO: "dropzoneGARBO" };
   const lbl = document.getElementById(labelMap[kind]);
   const dz  = document.getElementById(dzMap[kind]);
+  const nComm = Object.keys(outComm).reduce(function(s, e) { return s + Object.keys(outComm[e]).length; }, 0);
   if (lbl) {
     // Mostrar conteos: especies + comitentes si se detectaron
     let txt = fileName + " (" + Object.keys(out).length + " esp";
     if ((kind === "CV" || kind === "BO") && commIdx >= 0) {
-      const nComm = Object.keys(outComm).reduce(function(s, e) { return s + Object.keys(outComm[e]).length; }, 0);
       txt += ", " + nComm + " pos";
     }
     txt += ")";
     lbl.textContent = txt;
   }
   if (dz)  dz.classList.add("loaded");
+  // Diagnostico al console para debugging
+  console.log("[ingestReconFile]", kind, fileName, {
+    especies: Object.keys(out).length,
+    posicionesComitente: nComm,
+    commColumnFound: commIdx >= 0,
+    commColumnHeader: commIdx >= 0 ? headers[commIdx] : null,
+    detectedHeaders: headers.slice(0, 20),
+    COMM_CV: !!COMM_CV,
+    COMM_BO: !!COMM_BO
+  });
   renderRecon();
+  // Devolver diagnostico para que loadReconFile pueda dar feedback rico
+  return {
+    kind: kind,
+    especiesCount: Object.keys(out).length,
+    posicionesCount: nComm,
+    commColumnFound: commIdx >= 0,
+    commColumnHeader: commIdx >= 0 ? String(headers[commIdx] || "") : null,
+    commRowsParsed: commRowsParsed
+  };
 }
 
 async function loadReconFile(file, kind) {
   try {
     if (!_isAllowedFile(file)) throw new Error("Extension no soportada (usar CSV, TXT, XLSX, XLSM)");
     const matrix = await readFileMatrix(file);
-    ingestReconFile(matrix, kind, file.name);
-    notify("<b>" + kind + " cargado:</b> " + file.name, "success");
+    const diag = ingestReconFile(matrix, kind, file.name);
+    // Feedback rico: distinguir si se extrajo comitente o no
+    if (kind === "CV" || kind === "BO") {
+      if (diag.commColumnFound && diag.commRowsParsed > 0) {
+        notify(
+          "<b>" + kind + " cargado:</b> " + file.name +
+          "<br><small>&bull; " + diag.especiesCount + " especies, " + diag.posicionesCount +
+          " posiciones por comitente (col. <b>" + diag.commColumnHeader + "</b>)</small>",
+          "success", 4500
+        );
+      } else {
+        notify(
+          "<b>" + kind + " cargado parcialmente:</b> " + file.name +
+          "<br><small>" + diag.especiesCount + " especies detectadas, <b>pero no se encontro columna de comitente</b>. " +
+          "<br>No se podra generar el SI.2 desde este archivo.<br>" +
+          "Headers para que esto funcione: <b>Comitente</b>, <b>Cuenta</b>, <b>AccountNumber</b>, <b>NroComitente</b>, <b>Cliente</b>, <b>Holder</b>.</small>",
+          "warning", 9000
+        );
+      }
+    } else {
+      notify(
+        "<b>" + kind + " cargado:</b> " + file.name +
+        "<br><small>" + diag.especiesCount + " especies</small>",
+        "success", 3500
+      );
+    }
   } catch (e) {
     notify("<b>Error cargando " + kind + ":</b> " + e.message, "error");
   }
@@ -3777,12 +3823,14 @@ function renderRecon() {
   // --- Filtros + opciones ---
   const onlyDiff = (document.getElementById("reconOnlyDiff") || {}).checked;
   const includeSettle = (document.getElementById("commIncludeSettle") || {}).checked;
+  const excludeFunds = (document.getElementById("excludeFunds") || {}).checked;
   const search = ((document.getElementById("searchBoxRecon") || {}).value || "").trim().toUpperCase();
   const haveBothGar = !!(RECON_GAR && RECON_GARBO);
   const fmt = function(n) { return (n||0).toLocaleString("es-AR", { minimumFractionDigits: 0, maximumFractionDigits: 4 }); };
 
   // --- Procesar cada especie ---
   let okN = 0, explN = 0, descN = 0;
+  let fundsDetected = 0, fundsExcluded = 0;
   const blocks = [];
   Array.from(allEsp).sort().forEach(function(esp) {
     const cQ  = cvTotals[esp] || 0;
@@ -3794,6 +3842,13 @@ function renderRecon() {
                 || (gar[esp]   && gar[esp].ticker)
                 || (garbo[esp] && garbo[esp].ticker)
                 || "";
+
+    // Excluir fondos (FCI) si el toggle esta activo
+    const isFund = _isFundEspecie(ticker);
+    if (isFund) {
+      fundsDetected++;
+      if (excludeFunds) { fundsExcluded++; return; } // skip esta especie
+    }
 
     // Logica de descalce (preserva la del modulo original):
     //   diffMain = AUNE - Caja
@@ -3871,6 +3926,42 @@ function renderRecon() {
   setText("reconOK", okN);
   setText("reconExpl", explN);
   setText("reconDescalce", descN);
+  // Contador de fondos: detectados y, entre parentesis, excluidos por el toggle
+  const fundsEl = document.getElementById("fundsCount");
+  if (fundsEl) {
+    fundsEl.textContent = excludeFunds && fundsExcluded > 0
+      ? (fundsDetected + " (excluidos)")
+      : String(fundsDetected);
+  }
+
+  // --- Indicador en vivo del estado del SI.2 ---
+  const si2Status = document.getElementById("si2Status");
+  if (si2Status) {
+    if (!COMM_CV && !COMM_BO) {
+      si2Status.textContent = "Carga CV y AUNE con comitente";
+      si2Status.style.color = "var(--text-muted)";
+      si2Status.style.background = "var(--bg-alt)";
+    } else if (!COMM_CV) {
+      si2Status.textContent = "Falta CV con comitente";
+      si2Status.style.color = "#92400E";
+      si2Status.style.background = "#FEF3C7";
+    } else if (!COMM_BO) {
+      si2Status.textContent = "Falta AUNE con comitente";
+      si2Status.style.color = "#92400E";
+      si2Status.style.background = "#FEF3C7";
+    } else if (descN === 0) {
+      si2Status.textContent = "✓ Conciliado (sin transferencias)";
+      si2Status.style.color = "#065F46";
+      si2Status.style.background = "#D1FAE5";
+    } else {
+      // Calcular movimientos potenciales
+      let potentialMoves = 0;
+      blocks.forEach(function(b) { if (b.moves) potentialMoves += b.moves.length; });
+      si2Status.textContent = "✓ Listo: " + potentialMoves + " transferencia" + (potentialMoves === 1 ? "" : "s") + " para SI.2";
+      si2Status.style.color = "#065F46";
+      si2Status.style.background = "#D1FAE5";
+    }
+  }
 
   // --- Inline SETTLE summary ---
   const settleInline = document.getElementById("commSettleDetected");
@@ -4041,6 +4132,8 @@ function setupReconDropzones() {
   if (od) od.addEventListener("change", function() { renderRecon(); });
   const is = document.getElementById("commIncludeSettle");
   if (is) is.addEventListener("change", function() { renderRecon(); });
+  const ef = document.getElementById("excludeFunds");
+  if (ef) ef.addEventListener("change", function() { renderRecon(); });
 
   // Boton "Generar archivo SI2"
   const btnSI2 = document.getElementById("btnGenSI2");
@@ -4154,9 +4247,34 @@ function _normComitenteCV(raw) {
   return s;
 }
 
-// Normalizacion universal de comitente: extrae solo el numero
+// Detecta si una especie es un FCI / Fondo Comun de Inversion mirando la descripcion
+// que trae AUNE (ej: "[10025] PELLEGRINI - FONDO COMUN", "FIMA RENTA FIJA", etc.).
+// Patrones reconocidos:
+//   - FONDO / FONDOS / FCI / FCIS / FUND / FUNDS (con word boundary)
+//   - F.C.I. o F.C.I (con puntos)
+//   - "COMUN DE INV(ERSION)?" frase tipica
+// Evita falsos positivos como "TELECOM COMUNICACIONES" porque no usa /COMUN/ pelado.
+function _isFundEspecie(tickerOrDesc) {
+  const t = String(tickerOrDesc || "").toUpperCase();
+  if (!t) return false;
+  if (/\b(FONDOS?|FCIS?|FUND|FUNDS)\b/.test(t)) return true;
+  if (/F\.C\.I\.?/.test(t)) return true;
+  if (/COMUN\s+DE\s+INV/.test(t)) return true;
+  return false;
+}
+
+// Saca leading zeros de un numero "00170030" -> "170030". Si solo hay ceros, devuelve "0".
+function _stripLeadingZeros(s) {
+  if (!/^\d+$/.test(s)) return s;
+  const stripped = s.replace(/^0+/, "");
+  return stripped === "" ? "0" : stripped;
+}
+
+// Normalizacion universal de comitente: extrae solo el numero (sin leading zeros)
 // Soporta:  "11/170030" (CV)            -> "170030"
+//           "11/00170030" (CV padded)   -> "170030"  (mismo match que sin padding)
 //           "[170030] Casares, Esteban" -> "170030"
+//           "[00170030] Name"           -> "170030"
 //           "170030" (plano)            -> "170030"
 //           "70011/10000" (settle)      -> "70011/10000" (preserva)
 //           "[80011/55555] FONDEO"      -> "80011/55555" (preserva canonico)
@@ -4170,15 +4288,15 @@ function _normComitenteUniversal(raw) {
   if (_isSettleAccount(s)) return _stripSettleNoise(s);
   // AUNE: "[10021] Name" -> "10021"
   let m = s.match(/^\[(\d+)\]/);
-  if (m) return m[1];
-  // CV: "11/170030" -> "170030"
+  if (m) return _stripLeadingZeros(m[1]);
+  // CV: "11/170030" o "11/00170030" -> "170030"
   m = s.match(/^11\/(\d+)/);
-  if (m) return m[1];
+  if (m) return _stripLeadingZeros(m[1]);
   // Numero solo
-  if (/^\d+$/.test(s)) return s;
+  if (/^\d+$/.test(s)) return _stripLeadingZeros(s);
   // "10021 - Name" o "10021 Name" -> "10021"
   m = s.match(/^(\d+)/);
-  if (m) return m[1];
+  if (m) return _stripLeadingZeros(m[1]);
   return s;
 }
 
@@ -4284,39 +4402,93 @@ function _formatSI2Account(comm) {
 }
 
 function generateSI2() {
-  if (!COMM_CV || !COMM_BO) {
-    notify("Cargá primero los archivos por comitente (Caja y AUNE).", "warning");
+  // Diagnostico claro: explicar exactamente que falta
+  const missing = [];
+  if (!COMM_CV) missing.push("Caja de Valores");
+  if (!COMM_BO) missing.push("AUNE");
+  if (missing.length) {
+    const cvLoaded   = !!RECON_CV,  boLoaded = !!RECON_BO;
+    const cvHasComm  = !!COMM_CV,   boHasComm = !!COMM_BO;
+    let hint = "";
+    if ((cvLoaded && !cvHasComm) || (boLoaded && !boHasComm)) {
+      hint = "<br><small>El archivo se cargo pero no se detecto columna de Comitente. " +
+             "Asegurate de que el archivo tenga una columna como: " +
+             "<b>Comitente</b>, <b>Cuenta</b>, <b>AccountNumber</b>, <b>NroComitente</b>, <b>Holder</b>, <b>Cliente</b>.</small>";
+    } else {
+      hint = "<br><small>Carga el/los archivo(s) con detalle por comitente en los dropzones de arriba.</small>";
+    }
+    notify(
+      "<b>No se puede generar el SI.2</b> &mdash; falta el detalle por comitente de: <b>" +
+      missing.join(" y ") + "</b>." + hint,
+      "warning", 8500
+    );
+    console.warn("[generateSI2] missing comitente data:", { missing: missing, RECON_CV: !!RECON_CV, RECON_BO: !!RECON_BO, COMM_CV: !!COMM_CV, COMM_BO: !!COMM_BO });
     return;
   }
   const cv = COMM_CV, bo = COMM_BO;
   const includeSettle = (document.getElementById("commIncludeSettle") || {}).checked;
+  const excludeFunds = (document.getElementById("excludeFunds") || {}).checked;
+  const cvRaw = RECON_CV || {}, boRaw = RECON_BO || {};
+  const gar = RECON_GAR || {}, garbo = RECON_GARBO || {};
   const allEsp = new Set();
   Object.keys(cv).forEach(function(k) { allEsp.add(k); });
   Object.keys(bo).forEach(function(k) { allEsp.add(k); });
 
   const allMoves = [];
+  let especiesConDiff = 0;
+  let especiesSinFuente = 0;
+  let fundsExcluidos = 0;
   allEsp.forEach(function(esp) {
+    // Si el toggle "Excluir fondos" esta activo, saltear FCIs
+    if (excludeFunds) {
+      const ticker = (cvRaw[esp] && cvRaw[esp].ticker) || (boRaw[esp] && boRaw[esp].ticker) || (gar[esp] && gar[esp].ticker) || (garbo[esp] && garbo[esp].ticker) || "";
+      if (_isFundEspecie(ticker)) { fundsExcluidos++; return; }
+    }
     const cvByComm = cv[esp] || {};
     const boByComm = bo[esp] || {};
     const allComm = new Set();
     Object.keys(cvByComm).forEach(function(c) { allComm.add(c); });
     Object.keys(boByComm).forEach(function(c) { allComm.add(c); });
     const rows = [];
+    let hasDiff = false;
     allComm.forEach(function(comm) {
       const cQ = cvByComm[comm] ? cvByComm[comm].qty : 0;
       const bQ = boByComm[comm] ? boByComm[comm].qty : 0;
       const isSettle = (cvByComm[comm] && cvByComm[comm].isSettle) || (boByComm[comm] && boByComm[comm].isSettle) || _isSettleAccount(comm);
       const diff = bQ - cQ;
+      if (Math.abs(diff) > 0.0001 || (isSettle && cQ > 0.0001)) hasDiff = true;
       rows.push({ comm: comm, cQ: cQ, bQ: bQ, diff: diff, isSettle: isSettle });
     });
+    if (hasDiff) especiesConDiff++;
     const moves = _suggestMoves(rows, includeSettle);
+    if (hasDiff && !moves.length) especiesSinFuente++;
     moves.forEach(function(m) {
       allMoves.push({ esp: esp, from: m.from, to: m.to, qty: m.qty, fromSettle: m.fromSettle });
     });
   });
 
+  console.log("[generateSI2] estado:", {
+    especiesAnalizadas: allEsp.size,
+    fondosExcluidos: fundsExcluidos,
+    especiesConDescalce: especiesConDiff,
+    especiesSinFuente: especiesSinFuente,
+    movimientosGenerados: allMoves.length
+  });
+
   if (!allMoves.length) {
-    notify("No hay movimientos para generar &mdash; todo conciliado o falta data.", "info");
+    if (especiesConDiff === 0) {
+      notify(
+        "<b>No hay descalces:</b> CV y AUNE coinciden por comitente en todas las especies. No se genera SI.2 porque no hay transferencias necesarias.",
+        "info", 6000
+      );
+    } else {
+      notify(
+        "<b>" + especiesConDiff + " especies tienen descalce pero ninguna tiene fuente cubrible.</b>" +
+        "<br><small>Reviso: las cuentas SETTLE no tienen saldo en CV y no hay comitentes con saldo sobrante. " +
+        "Si esperabas usar SETTLE, verifica que las cuentas 80011/22.., 80011/55.. o 70011/.. aparezcan en el archivo de CV con saldo > 0.</small>",
+        "warning", 8500
+      );
+    }
     return;
   }
 
